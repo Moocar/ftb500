@@ -40,8 +40,8 @@
            (when buf
              (try
                (>! recv-ch
-                   (assoc (transit-buf->clj buf)
-                          :conn conn))
+                   {:msg (transit-buf->clj buf)
+                    :conn conn})
                (catch Throwable t
                  (println "throwable " t)
                  (async/put! error-ch t)))
