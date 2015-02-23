@@ -1,0 +1,162 @@
+* Actions
+
+** add-game
+
+Someone adds a game. Maybe it's an admin, or a punter. The game should
+have a uuid created by the client, including some other information
+such as name or number of players. If it was a punter, it could
+include the punter's userid. If a game is created successfully, the
+server saves it to datomic, it is published to all servers. A client
+may have registered interest in listening to all new games, or
+perhaps all new games that match a certain criteria using a datomic
+query language. Or maybe it just registers interest in one game. When
+the new datom is published to the node, it pulls out the game-id,
+realizes that a client is listening for that game-id, and then it
+publishes that information to the client. Now the client knows that
+the game was created successfully. In this way, writes are completely
+decoupled from reads.
+
+How about an error? No more games can be created, because the engine
+is dead. Then we publish an error event back to the client. it's
+literally a message being sent from server to the originally calling
+client. Game couln't be created. Server error. Game id = 3. Pretty
+simple on the server.
+
+On the client, you need to setup a sub for game-id = 3. Then you can
+dispatch on the success or failure. The server could also hint at
+whether it's a user failure or an engine failure. If a message is not
+received, you can create the game again. This time, the server will
+receive the request. If it's already created, it will do nothing. If
+it's not, it will try transacting it. If it's already in DB, an
+exception will be thrown? If so, should it publish an error? No,
+because it's idempotent. Instead, maybe the client can then request
+whether the game exists? But that requires some kind of RPC. Perhaps
+it could just be "game id 3 created?", "yes game 3 exists".
+
+How about somehow using the latest t-value? The t-value is sent down
+to the client.
+
+1. Add-game
+-> sync 0
+figure out all transactions between 0 and 1. query all transactions
+for game-id = 3, where t-value is between 0 and 1.
+
+Will have to store t-value for each client somewhere. It could be a
+no-history attribute for the client. Or, it could be a read to redis.
+It would require storing a client in the database design. Which could
+be useful for analytics anyway. We could potentially create a new
+database every time there is a new game too. Or perhaps create a new
+partition? Would that work? Oh well, not important now.
+
+** join-game
+
+Client wants to join game-id 1 at seat 2 as user 3. So it sends that
+message. Server transacts. client is registered to listen for events
+for game 1. So when transaction occurs, server recognises that and
+sends that information. Client listens for that join game to occur,
+and all is good.
+
+If error occurs, e.g game has no more seats. server sends error back
+to client. "game full", with game-id, seat-id. Client responsible for
+listening for that error. In fact, it's the same as add-game. Listen
+for an event for join-game with the game-id and seat-id. The body of
+that will say whether it was successful or a failure.
+
+Can also add the same retry logic.
+
+** create-user
+
+You are a client. You have made a connection to the server. Now you
+want to create a user so that you can create/join a game. You
+generate your own user-id and create a username and an email. We send
+a conf link to that email. You click it. There is a code. Send a
+message with user-id and confirm code. Wait for response with user-id
+and confirm-code. Now it includes a token. Client must send that
+token in each request, otherwise won't be logged in.
+
+** Update a user
+
+Set your name or stuff like that. Let's say you want to change your
+name to Harry. But right before that, your friend is logged into
+another machine and Changes your name to Bilbo. You want to see that
+change on your screen instantly.
+
+So Bilbo is sent up in a request. Client for that user is logged onto
+another machine. The transaction could include a user-id attribute.
+So the other machines see the user-id. And notice that that user is
+connected. Therefore it publishes that information to the client.
+
+When the transaction occurs, it can associate the latest t-value with
+that customer entity. And that gets sent down to the client too. So,
+the client can keep a track of its t-value. What if it does the
+following. Every transaction for a user results in an ID being
+incremented and saved against the user. If the client receives update
+1 an 3. Then it knows that it's behind. It can ask for update 2. and
+then continue as before. But if the update is for a game, then how do
+you update for all customer's all the time?
+
+Client detects disconnect. Maybe the server went down. It reconnects.
+This time it might connect to a new server. The client says "here's
+the last t-value I received". Server says "ahh, you need these
+updates". That means that every time an update is sent to a client,
+we need to record the t-value that was sent. And then to lookup the
+difference, we get a historical db and query over that. It should
+work. Perhaps the client DB is a separate datomic instance to allow
+for easy exision. Could go either way.
+
+So hang on, there have been updates to the game. But the client
+wasn't connected for the last few. So no updates were sent. How would
+you record that data then? If they reconnected, they're a new client.
+So the updates have to be registered against a user, not a client. OK
+so that won't work.
+
+What we can do is say here is my last t-value for me as a user. Then,
+we can query that entity and all its changes since then, and send
+them down to that user with the new t-value.
+
+So connect and login. Request user entity. t-value returned.
+
+In datomic, it's easy to get the last time an entity was updated. How
+do you render updates though? You'd have to return a set of datoms
+that included whether facts were added or removed. The UI could work
+with that. Datoms sent down would be:
+
+[:db/add game-ext-id :game/first-seat seat-ext-id]
+
+** Client request
+
+- [ ] server error returned
+- [ ] response-ch closed? (pub-ch closed)
+- [ ] no response received
+- [ ] connection goes out
+
+We can model the recv-ch and send-ch as pure channels. And underneath
+that, we can have a loop to worry about communication errors. But if
+we're trying to add a game, and we're not getting a response back,
+perhaps we can detect that a connection might be down. One problem is
+that for each send, we don't necessarily expect a recv. So there
+would have to be a separate loop sending a ping every 10s or so. A
+keepalive but also a down connection. If it ever went down, it could
+try to reconnect.
+
+The UI can run a loop. Every time a slow connection is recognized, a
+msg is put into a channel which instructs the message to be shown to
+the user. "slow connection". Then when the reconnect occurs, another
+ch is put into.
+
+To actually do that, every recv is a mult. One copy goes to the up
+connection counter. The other copy goes to a pub which can be sub'd.
+So, if a thing has been sent, and we're waiting on a response, and
+the connection goes down, the user is shown. Then the request has to
+be notified that the connection has gone down, so you should probably
+send your request again.
+
+Or, if no response is received, perhaps
+
+
+** Scale
+How does datomic scale here? If we're listening on the log for all
+events, that's going to get pretty CPU intensive eventually. Could a
+server be naturally sharded for a game-id? probably. It would be
+really nice if datomic supported publishing based on a transaction
+fingerprint

@@ -1,0 +1,91 @@
+* Design of FTB500
+
+** Client syncing
+
+When a client first connects and logs in, it can request the latest
+information about itself. The specific fields it cares about could be
+done using the pull api spec. Importantly, user entity information
+that is sent down to the client also includes the latest t-value of
+the DB. That way, when a client reconnects, it requests the latest
+user information and sends the t-value as the since field. That way,
+the server can lookup all updates for the user entity since that
+time.
+
+Updates introduce a challenge. In order to support them, the UI needs
+to support additions and retractions, much like datomic. So instead
+of sending entities to clients as maps, you need to support the same
+datoms, but with external entity IDs instead of internal datomic
+entity IDs. This shoul be doable using datalog. It will also require
+heavy use of the history database which will slow things down. But
+this should be fine as long as the client only requests a sync when a
+disconnect has occurred.
+
+This implies that the client must have its own schema and there
+should be a transformation layer between the two.
+
+** Communication
+
+*** Intro
+
+I've decided that all communication should be modelled using
+send/recv channels. If a player plays a card for instance, a message
+will be send over the send channel. Then, the player needs to wait
+for ackowledgement that their action occurred by listening for it
+over the recv channel. This is similar to a Command Query
+Responsibility Separation (CQRS) strategy, but in a purely
+asynchronous context. You tell the server to do something. Then the
+server will update you that something occurred. In the case of
+playing a card, the server will actually broadcast to all clients.
+The originating player listens for that broacast to know that their
+card was played successfully. Note the RPC simply doesn't work here
+since most actions will result in broadcasts, not responses.
+
+*** Transports
+
+Underlying the send/recv channels are communication transports. This
+could be websockets, direct inline piping using core.async,
+socket->socket communication. It's up to the implementation. This
+allows for very easy unit testing.
+
+The transport is responsible for detecting if the other side of the
+connection is down. In those cases, the transport itself is
+responsible for reconnecting, and then notifying the client logic
+that a reconnect has occurred. In this way, the client logic doesn't
+need to worry about connection logic.
+
+*** Error cases
+
+**** Connection goes down
+As discussed above, down connections must be identified by the
+transport. When it is detected, it should immediately reconnect and
+inform the client logic by putting a message into the reconnect-ch.
+
+**** Timeout waiting for matching recv message
+This could be for many reasons.
+- A router might drop a packet.
+- The connection could just be incredibly slow.
+- The server might be accepting packets but be deadlocked
+- The server might complete the action but not send a msg back
+
+In all these cases, the only way to recover is to ensure that all
+actions are idempotent. This isn't always possible but as much as
+possible, the system should be designed to accomplish that. E.g If an
+entity is to be created as part of an action, the caller should
+create the ID.
+
+Assuming idempotent actions, the caller should wait for a period. If
+the expected message is not received, it should try again. Since
+actions are idempotent, this isn't a problem
+
+**** Server error
+If an error occurs on the server, E.g out of memory, the server will
+send a message to the caller that is an echo with error information.
+The error will include whether the message can be retried and if so,
+how much later the retry should occur. If the message can't be
+retried, the client should fail. Nothing can be done.
+
+**** User error
+If the user's input was invalid, the message will be echoed back but
+with error information. This should be bubble up to the calling
+client code so that they can surface the error to the user so that
+they can retry the action but with new data.
