@@ -30,33 +30,35 @@
 
 (defn conn-loop
   [recv-ch {:keys [error-ch connect-ch read-ch send-ch write-ch] :as conn}]
-  (go
-    (when-let [session (<! connect-ch)]
-      (loop []
-        (alt!
+  (let []
+    (go
+      (when-let [session (<! connect-ch)]
+        (loop []
+          (alt!
 
-          read-ch
-          ([buf]
-           (when buf
-             (try
-               (>! recv-ch
-                   {:msg (transit-buf->clj buf)
-                    :conn conn})
-               (catch Throwable t
-                 (println "throwable " t)
-                 (async/put! error-ch t)))
-             (recur)))
+            read-ch
+            ([buf]
+             (when buf
+               (try
+                 (let [msg-wrapper {:msg (transit-buf->clj buf)
+                                    :send-ch send-ch}]
+                   (>! recv-ch msg-wrapper))
+                 (catch Throwable t
+                   (println "throwable " t)
+                   (async/put! error-ch t)))
+               (recur)))
 
-          send-ch
-          ([msg]
-           (when msg
-             (println "send!" msg)
-             (write session error-ch msg)
-             (recur)))
+            send-ch
+            ([msg]
+             (when msg
+               (println "send!" msg)
+               (write session error-ch msg)
+               (recur)))
 
-          connect-ch
-          ([[status-code reason]]
-           (async/close! connect-ch)))))))
+            connect-ch
+            ([[status-code reason]]
+             (println "connect msg" status-code reason)
+             (async/close! connect-ch))))))))
 
 (defn listener
   "Returns a websocket listener that does nothing but put connections,
@@ -68,7 +70,6 @@
     (onWebSocketText [this message]
       (throw (UnsupportedOperationException. "Text not supported")))
     (onWebSocketBinary [this bytes offset len]
-      (println "binary!")
       (async/put! read-ch (ByteBuffer/wrap bytes offset len)))
     (onWebSocketError [this cause]
       (when-not error-ch
