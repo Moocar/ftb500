@@ -37,7 +37,15 @@
       this)))
 
 (defn new-websocket-client
-  [recv-ch config]
+  "Creates a new websocket client. config is a map of :port (number)
+  and hostname (string) that represent the remote server to connect
+  to. recv-ch is a channel upon which incoming messages from the
+  server will be put, in the format:
+
+  :msg - the raw clojure message sent from the client
+  :send-ch - Channel that can be used to send messages back to the
+  client"
+  [config recv-ch]
   (let [{:keys [port hostname]} config]
     (assert port)
     (assert hostname)

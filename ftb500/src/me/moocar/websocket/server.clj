@@ -13,7 +13,11 @@
     (configure [^WebSocketServletFactory factory]
       (.setCreator factory creator))))
 
-(defn- create-websocket [recv-ch]
+(defn- create-websocket
+  "Returns a function that should be called upon a new connection. The
+  function creates a new connection map, starts a connection loop and
+  returns a listener"
+  [recv-ch]
   (fn [this request response]
     (let [conn (websocket/default-conn-f)
           listener (websocket/listener conn)]
@@ -21,18 +25,22 @@
       listener)))
 
 (defn- websocket-creator
+  "Boilerplate"
   [create-websocket-f]
   (reify WebSocketCreator
     (createWebSocket [this request response]
       (create-websocket-f this request response))))
 
 (defrecord WebsocketServer [port recv-ch
-                            server connector]
+                            server connector local-port]
   component/Lifecycle
   (start [this]
     (if server
       this
-      (let [server (Server.)
+      (let [port (if (= :random port)
+                   0
+                   port)
+            server (Server.)
             connector (doto (ServerConnector. server)
                         (.setPort port))
             create-websocket-f (create-websocket recv-ch)
@@ -41,19 +49,30 @@
         (.addConnector server connector)
         (.setHandler server ws-handler)
         (.start server)
-        (assoc this
-               :server server
-               :connector connector))))
+        (let [local-port (.getLocalPort connector)]
+          (assert local-port)
+          (assoc this
+                 :local-port local-port
+                 :server server
+                 :connector connector)))))
   (stop [this]
     (if server
       (do
         (.close connector)
         (.stop server)
-        (assoc this :server nil :connector nil))
+        (assoc this :server nil :connector nil :local-port nil))
       this)))
 
 (defn new-websocket-server
+  "Creates a new Websocket Server. config is a map that must include:
+  :port - number, or :random for a random available port (returns
+  bound port in :local-port)
+  :recv-ch - a channel upon which all new requests will be put as a map with the
+  following keys:
+   :msg - the raw clojure message sent from the client
+   :send-ch - Channel that can be used to send messages back to the
+  client"
   [config recv-ch]
-  {:pre [(number? (:port config))]}
   (let [{:keys [port]} config]
+    (assert (or (= :random port) (number? port)))
     (map->WebsocketServer {:port port :recv-ch recv-ch})))

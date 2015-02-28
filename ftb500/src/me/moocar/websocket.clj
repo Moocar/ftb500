@@ -7,7 +7,10 @@
            (org.eclipse.jetty.websocket.api WebSocketListener Session
                                             WriteCallback RemoteEndpoint)))
 
-(defn clj->transit-buf [msg]
+(defn clj->transit-buf
+  "Serializes a clojure datastructure into a byte buffer into
+  transit :json"
+  [msg]
   (let [buf (ByteBuffer/allocate 4096)
         output-stream (jio/output-stream buf)
         writer (transit/writer output-stream :json)]
@@ -15,12 +18,17 @@
     (.rewind buf)
     buf))
 
-(defn transit-buf->clj [buf]
+(defn transit-buf->clj
+  "Deserializes a byte buffer into a clojure data structure using
+  transit :json"
+  [buf]
   (let [input-stream (jio/input-stream buf)
         reader (transit/reader input-stream :json)]
     (transit/read reader)))
 
 (defn write
+  "Writes a clojure data structure to a session's remote using
+  transit :json"
   [session error-ch msg]
   (try
     (.sendBytes (.getRemote session) (clj->transit-buf msg))
@@ -29,8 +37,14 @@
       (async/put! error-ch t))))
 
 (defn conn-loop
-  [recv-ch {:keys [error-ch connect-ch read-ch send-ch write-ch] :as conn}]
-  (let []
+  "Waits for a connection to occur, and then loops waiting for IO.
+  Incoming messages to the server are consumed from the connection's
+  read-ch. They are converted into a clojure data structure and put
+  onto recv-ch. Outgoing messages are consumed from the connection's
+  send-ch, converted to a byte buffer, and sent using the session's
+  remote. The loop finishes once a disconnect occurs"
+  [recv-ch conn]
+  (let [{:keys [error-ch connect-ch read-ch send-ch]} conn]
     (go
       (when-let [session (<! connect-ch)]
         (loop []
@@ -83,7 +97,6 @@
   "Creates a default connection map"
   []
   {:read-ch (async/chan 1)
-   :write-ch (async/chan 1)
    :connect-ch (async/chan 1)
    :error-ch (async/chan 1)
    :send-ch (async/chan 1)})
