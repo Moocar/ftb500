@@ -7,21 +7,27 @@
 (defn new-server [recv-ch]
   (map->InlineServer {:recv-ch recv-ch}))
 
-(defrecord InlineClient [server recv-ch]
+(defrecord InlineClient [server
+                         transport-chans]
   component/Lifecycle
   (start [this]
-    (let [send-ch (async/chan 1)]
+    (let [{:keys [send-ch recv-ch]} transport-chans
+          internal-recv-ch (async/chan 1)]
+      (go-loop []
+        (when-let [msg (<! internal-recv-ch)]
+          (>! recv-ch {:msg msg
+                       :send-ch send-ch})))
       (go-loop []
         (when-let [msg (<! send-ch)]
           (>! (:recv-ch server)
               {:msg msg
-               :send-ch recv-ch})
+               :send-ch internal-recv-ch})
           (recur)))
-      (assoc this
-             :conn {:send-ch send-ch
-                    :recv-ch recv-ch})))
-  (stop [this]))
+      this))
+  (stop [this]
+    this))
 
-(defn new-client [server recv-ch]
-  (map->InlineClient {:recv-ch recv-ch
-                      :server server}))
+(defn new-client [server]
+  (component/using
+    (map->InlineClient {:server server})
+    [:transport-chans]))
