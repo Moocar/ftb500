@@ -21,9 +21,10 @@
   [recv-ch]
   (fn [this request response]
     (let [conn (websocket/default-conn-f)
-          send-ch (async/chan 1)
+          transport-chans {:send-ch (async/chan 1)
+                           :recv-ch recv-ch}
           listener (websocket/listener conn)]
-      (websocket/conn-loop recv-ch send-ch conn)
+      (websocket/conn-loop transport-chans conn)
       listener)))
 
 (defn- websocket-creator

@@ -43,8 +43,9 @@
   onto recv-ch. Outgoing messages are consumed from the connection's
   send-ch, converted to a byte buffer, and sent using the session's
   remote. The loop finishes once a disconnect occurs"
-  [recv-ch send-ch conn]
-  (let [{:keys [error-ch connect-ch read-ch]} conn]
+  [transport-chans conn]
+  (let [{:keys [error-ch connect-ch read-ch]} conn
+        {:keys [send-ch recv-ch]} transport-chans]
     (go
       (when-let [session (<! connect-ch)]
         (loop []

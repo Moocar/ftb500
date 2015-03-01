@@ -11,8 +11,10 @@
   (let [uri-string (format "ws://%s:%s" hostname port)]
     (URI. uri-string)))
 
-(defrecord WebsocketClient [port hostname recv-ch send-ch
-                            jetty-client]
+(defrecord WebsocketClient [port hostname ; params
+                            transport-chans ; dependencies
+                            jetty-client ; after started
+                            ]
   component/Lifecycle
   (start [this]
     (if jetty-client
@@ -21,7 +23,7 @@
             uri (make-uri this)
             conn (websocket/default-conn-f)
             listener (websocket/listener conn)]
-        (websocket/conn-loop recv-ch send-ch conn)
+        (websocket/conn-loop transport-chans conn)
         (.start jetty-client)
         (if (deref (.connect jetty-client listener uri) 1000 nil)
           (assoc this
@@ -44,13 +46,11 @@
   :msg - the raw clojure message sent from the client
   :send-ch - Channel that can be used to send messages back to the
   client"
-  [config recv-ch send-ch]
+  [config]
   (let [{:keys [port hostname]} config]
     (assert port)
     (assert hostname)
-    (assert recv-ch)
-    (assert send-ch)
-    (map->WebsocketClient {:recv-ch recv-ch
-                           :send-ch send-ch
-                           :hostname hostname
-                           :port port})))
+    (component/using
+      (map->WebsocketClient {:hostname hostname
+                             :port port})
+      [:transport-chans])))
