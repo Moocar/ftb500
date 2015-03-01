@@ -43,8 +43,8 @@
   onto recv-ch. Outgoing messages are consumed from the connection's
   send-ch, converted to a byte buffer, and sent using the session's
   remote. The loop finishes once a disconnect occurs"
-  [recv-ch conn]
-  (let [{:keys [error-ch connect-ch read-ch send-ch]} conn]
+  [recv-ch send-ch conn]
+  (let [{:keys [error-ch connect-ch read-ch]} conn]
     (go
       (when-let [session (<! connect-ch)]
         (loop []
@@ -98,5 +98,4 @@
   []
   {:read-ch (async/chan 1)
    :connect-ch (async/chan 1)
-   :error-ch (async/chan 1)
-   :send-ch (async/chan 1)})
+   :error-ch (async/chan 1)})

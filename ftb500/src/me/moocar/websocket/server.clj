@@ -1,5 +1,6 @@
 (ns me.moocar.websocket.server
-  (:require [com.stuartsierra.component :as component]
+  (:require [clojure.core.async :as async]
+            [com.stuartsierra.component :as component]
             [me.moocar.websocket :as websocket])
   (:import (org.eclipse.jetty.server Server ServerConnector)
            (org.eclipse.jetty.websocket.server WebSocketHandler)
@@ -20,8 +21,9 @@
   [recv-ch]
   (fn [this request response]
     (let [conn (websocket/default-conn-f)
+          send-ch (async/chan 1)
           listener (websocket/listener conn)]
-      (websocket/conn-loop recv-ch conn)
+      (websocket/conn-loop recv-ch send-ch conn)
       listener)))
 
 (defn- websocket-creator

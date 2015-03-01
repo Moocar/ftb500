@@ -13,11 +13,12 @@
       (let [server-port (:local-port server)
             client-config {:hostname "localhost" :port server-port}
             client-recv-ch (async/chan 1)
-            client (component/start (client/new-websocket-client client-config client-recv-ch))]
+            client-send-ch (async/chan 1)
+            client (component/start (client/new-websocket-client client-config client-recv-ch client-send-ch))]
         (try
           (let [msg {:route :moo/car
                      :body "this is my body"}]
-            (>!! (:send-ch (:conn client)) msg)
+            (>!! (:send-ch client) msg)
             (go
               (when-let [packet (<! server-recv-ch)]
                 (>! (:send-ch packet) (:msg packet))))

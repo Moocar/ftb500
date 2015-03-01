@@ -11,7 +11,7 @@
   (let [uri-string (format "ws://%s:%s" hostname port)]
     (URI. uri-string)))
 
-(defrecord WebsocketClient [port hostname recv-ch
+(defrecord WebsocketClient [port hostname recv-ch send-ch
                             client]
   component/Lifecycle
   (start [this]
@@ -21,12 +21,11 @@
             uri (make-uri this)
             conn (websocket/default-conn-f)
             listener (websocket/listener conn)]
-        (websocket/conn-loop recv-ch conn)
+        (websocket/conn-loop recv-ch send-ch conn)
         (.start client)
         (if (deref (.connect client listener uri) 1000 nil)
           (assoc this
-                 :client client
-                 :conn (assoc conn :recv-ch recv-ch))
+                 :client client)
           (throw (ex-info "Failed to connect"
                           this))))))
   (stop [this]
@@ -45,11 +44,13 @@
   :msg - the raw clojure message sent from the client
   :send-ch - Channel that can be used to send messages back to the
   client"
-  [config recv-ch]
+  [config recv-ch send-ch]
   (let [{:keys [port hostname]} config]
     (assert port)
     (assert hostname)
     (assert recv-ch)
+    (assert send-ch)
     (map->WebsocketClient {:recv-ch recv-ch
+                           :send-ch send-ch
                            :hostname hostname
                            :port port})))
