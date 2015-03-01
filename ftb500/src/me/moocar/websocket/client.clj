@@ -12,27 +12,27 @@
     (URI. uri-string)))
 
 (defrecord WebsocketClient [port hostname recv-ch send-ch
-                            client]
+                            jetty-client]
   component/Lifecycle
   (start [this]
-    (if client
+    (if jetty-client
       this
-      (let [client (WebSocketClient.)
+      (let [jetty-client (WebSocketClient.)
             uri (make-uri this)
             conn (websocket/default-conn-f)
             listener (websocket/listener conn)]
         (websocket/conn-loop recv-ch send-ch conn)
-        (.start client)
-        (if (deref (.connect client listener uri) 1000 nil)
+        (.start jetty-client)
+        (if (deref (.connect jetty-client listener uri) 1000 nil)
           (assoc this
-                 :client client)
+                 :jetty-client jetty-client)
           (throw (ex-info "Failed to connect"
                           this))))))
   (stop [this]
-    (if client
+    (if jetty-client
       (do
-        (.stop client)
-        (assoc this :client nil :conn nil))
+        (.stop jetty-client)
+        (assoc this :jetty-client nil :conn nil))
       this)))
 
 (defn new-websocket-client
