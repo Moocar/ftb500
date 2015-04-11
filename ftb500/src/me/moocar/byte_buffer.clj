@@ -4,6 +4,7 @@
            (java.nio ByteBuffer)))
 
 (defn byte-buffer-input-stream
+  "Creates an InputStream that reads bytes from a ByteBuffer"
   [buf opts]
   (proxy [InputStream] []
     (read
@@ -19,6 +20,7 @@
            len))))))
 
 (defn byte-buffer-output-stream
+  "Creates an OutputStream that writes bytes to a ByteBuffer"
   [buf opts]
   (proxy [OutputStream] []
     (write

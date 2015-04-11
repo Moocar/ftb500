@@ -7,8 +7,7 @@
 (defn new-server [recv-ch]
   (map->InlineServer {:recv-ch recv-ch}))
 
-(defrecord InlineClient [server
-                         transport-chans]
+(defrecord InlineClient [server transport-chans]
   component/Lifecycle
   (start [this]
     (let [{:keys [send-ch recv-ch]} transport-chans
@@ -27,7 +26,9 @@
   (stop [this]
     this))
 
-(defn new-client [server]
+(defn new-client
+  "Creates a new inline client. The client knows about the server. "
+  [server]
   (component/using
     (map->InlineClient {:server server})
     [:transport-chans]))

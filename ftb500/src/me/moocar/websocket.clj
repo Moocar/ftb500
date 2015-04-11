@@ -8,8 +8,8 @@
                                             WriteCallback RemoteEndpoint)))
 
 (defn clj->transit-buf
-  "Serializes a clojure datastructure into a byte buffer into
-  transit :json"
+  "Serializes a clojure datastructure into a byte buffer using
+  transit :json format. buffer is rewound before being returned"
   [msg]
   (let [buf (ByteBuffer/allocate 4096)
         output-stream (jio/output-stream buf)
@@ -19,8 +19,8 @@
     buf))
 
 (defn transit-buf->clj
-  "Deserializes a byte buffer into a clojure data structure using
-  transit :json"
+  "Deserializes a ByteBuffer into a clojure data structure. Assumes
+  buffer is encoded using :json transit"
   [buf]
   (let [input-stream (jio/input-stream buf)
         reader (transit/reader input-stream :json)]
@@ -53,10 +53,12 @@
 
             read-ch
             ([buf]
+             (prn "got read ch" buf)
              (when buf
                (try
                  (let [msg-wrapper {:msg (transit-buf->clj buf)
                                     :send-ch send-ch}]
+                   (prn "msg wrapper" msg-wrapper)
                    (>! recv-ch msg-wrapper))
                  (catch Throwable t
                    (println "throwable " t)

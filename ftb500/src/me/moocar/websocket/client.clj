@@ -17,6 +17,7 @@
                             ]
   component/Lifecycle
   (start [this]
+    (println "starting websocket client")
     (if jetty-client
       this
       (let [jetty-client (WebSocketClient.)
@@ -53,4 +54,4 @@
     (component/using
       (map->WebsocketClient {:hostname hostname
                              :port port})
-      [:transport-chans])))
+      [:transport-chans :websocket-server])))

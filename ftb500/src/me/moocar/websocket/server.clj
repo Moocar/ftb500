@@ -38,6 +38,7 @@
                             server connector local-port]
   component/Lifecycle
   (start [this]
+    (println "starting websocket server")
     (if server
       this
       (let [port (if (= :random port)
@@ -68,8 +69,8 @@
 
 (defn new-websocket-server
   "Creates a new Websocket Server. config is a map that must include:
-  :port - number, or :random for a random available port (returns
-  bound port in :local-port)
+  :port - number, or :random for a random available port. After the
+  component has been started, the bound port will be in :local-port
   :recv-ch - a channel upon which all new requests will be put as a map with the
   following keys:
    :msg - the raw clojure message sent from the client
