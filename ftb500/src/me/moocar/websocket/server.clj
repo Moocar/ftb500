@@ -18,11 +18,12 @@
   "Returns a function that should be called upon a new connection. The
   function creates a new connection map, starts a connection loop and
   returns a listener"
-  [recv-ch]
-  (fn [this request response]
-    (let [conn (websocket/default-conn-f)
+  [this]
+  (fn [_ request response]
+    (let [conn (merge (websocket/default-conn-f)
+                      (select-keys this [:log-ch]))
           transport-chans {:send-ch (async/chan 1)
-                           :recv-ch recv-ch}
+                           :recv-ch (:recv-ch this)}
           listener (websocket/listener conn)]
       (websocket/conn-loop transport-chans conn)
       listener)))
@@ -35,30 +36,33 @@
       (create-websocket-f this request response))))
 
 (defrecord WebsocketServer [port recv-ch
+                            log-ch
                             server connector local-port]
   component/Lifecycle
   (start [this]
-    (println "starting websocket server")
+    (println "starting websockt")
     (if server
       this
-      (let [port (if (= :random port)
-                   0
-                   port)
-            server (Server.)
-            connector (doto (ServerConnector. server)
-                        (.setPort port))
-            create-websocket-f (create-websocket recv-ch)
-            creator (websocket-creator create-websocket-f)
-            ws-handler (websocket-handler creator)]
-        (.addConnector server connector)
-        (.setHandler server ws-handler)
-        (.start server)
-        (let [local-port (.getLocalPort connector)]
-          (assert local-port)
-          (assoc this
-                 :local-port local-port
-                 :server server
-                 :connector connector)))))
+      (do
+        (async/put! log-ch {:websocket-server :started})
+        (let [port (if (= :random port)
+                     0
+                     port)
+              server (Server.)
+              connector (doto (ServerConnector. server)
+                          (.setPort port))
+              create-websocket-f (create-websocket this)
+              creator (websocket-creator create-websocket-f)
+              ws-handler (websocket-handler creator)]
+          (.addConnector server connector)
+          (.setHandler server ws-handler)
+          (.start server)
+          (let [local-port (.getLocalPort connector)]
+            (assert local-port)
+            (assoc this
+                   :local-port local-port
+                   :server server
+                   :connector connector))))))
   (stop [this]
     (if server
       (do
@@ -79,4 +83,6 @@
   [config recv-ch]
   (let [{:keys [port]} config]
     (assert (or (= :random port) (number? port)))
-    (map->WebsocketServer {:port port :recv-ch recv-ch})))
+    (component/using
+      (map->WebsocketServer {:port port :recv-ch recv-ch})
+      [:log-ch])))

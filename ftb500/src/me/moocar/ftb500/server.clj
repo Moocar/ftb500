@@ -1,20 +1,41 @@
-(ns me.moocar.ftb500.server)
+(ns me.moocar.ftb500.server
+  (:require [clojure.core.async :as async :refer [go-loop >! <!]]
+            [com.stuartsierra.component :as component]))
 
 (defrecord PubServer [recv-ch ; dependency
-                      route-pub-ch ; after started
+                      route-pub-ch pub-tap mult; after started
                       ]
   component/Lifecycle
   (start [this]
     (if route-pub-ch
       this
-      (let [route-pub-ch (async/pub recv-ch (comp :route :msg))]
-        (assoc this :route-pub-ch route-pub-ch))))
+      (let [mult (async/mult recv-ch)
+            pub-tap (async/chan 1)
+            route-pub-ch (async/pub pub-tap (comp :route :msg))]
+        (println "tapping")
+        (async/tap mult pub-tap)
+        (assoc this
+               :route-pub-ch route-pub-ch
+               :pub-tap pub-tap
+               :mult mult))))
   (stop [this]
     (if route-pub-ch
       (do (async/unsub-all route-pub-ch)
-          (assoc this :route-pub-ch nil))
+          (async/untap mult pub-tap)
+          (assoc this :route-pub-ch nil :pub-tap nil :mult nil))
       this)))
+
+(defn log-tap
+  [server]
+  (let [ch (async/chan 1)]
+    (async/tap (:mult server) ch)
+    (go-loop []
+      (when-let [msg (:msg (<! ch))]
+        (>! (:log-ch server) {:srv-recv msg})
+        (recur)))))
 
 (defn new-server
   [config recv-ch]
-  (map->PubServer {:recv-ch recv-ch}))
+  (component/using
+    (map->PubServer {:recv-ch recv-ch})
+    [:log-ch]))

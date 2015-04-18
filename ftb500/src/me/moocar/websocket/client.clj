@@ -1,5 +1,6 @@
 (ns me.moocar.websocket.client
-  (:require [com.stuartsierra.component :as component]
+  (:require [clojure.core.async :as async]
+            [com.stuartsierra.component :as component]
             [me.moocar.websocket :as websocket])
   (:import (java.net URI)
            (org.eclipse.jetty.websocket.client WebSocketClient)))
@@ -13,16 +14,19 @@
 
 (defrecord WebsocketClient [port hostname ; params
                             transport-chans ; dependencies
+                            log-ch
                             jetty-client ; after started
                             ]
   component/Lifecycle
   (start [this]
-    (println "starting websocket client")
+    (async/put! log-ch {:websocket-client :started})
     (if jetty-client
       this
       (let [jetty-client (WebSocketClient.)
             uri (make-uri this)
-            conn (websocket/default-conn-f)
+            conn (assoc (websocket/default-conn-f)
+                        :log-ch log-ch
+                        :client true)
             listener (websocket/listener conn)]
         (websocket/conn-loop transport-chans conn)
         (.start jetty-client)
@@ -54,4 +58,4 @@
     (component/using
       (map->WebsocketClient {:hostname hostname
                              :port port})
-      [:transport-chans :websocket-server])))
+      [:transport-chans :log-ch])))

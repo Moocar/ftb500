@@ -44,7 +44,7 @@
   send-ch, converted to a byte buffer, and sent using the session's
   remote. The loop finishes once a disconnect occurs"
   [transport-chans conn]
-  (let [{:keys [error-ch connect-ch read-ch]} conn
+  (let [{:keys [error-ch connect-ch read-ch log-ch]} conn
         {:keys [send-ch recv-ch]} transport-chans]
     (go
       (when-let [session (<! connect-ch)]
@@ -53,28 +53,28 @@
 
             read-ch
             ([buf]
-             (prn "got read ch" buf)
+             #_(>! log-ch {:read buf})
              (when buf
                (try
                  (let [msg-wrapper {:msg (transit-buf->clj buf)
                                     :send-ch send-ch}]
-                   (prn "msg wrapper" msg-wrapper)
+                   #_(>! log-ch {:msg-wrapper msg-wrapper})
                    (>! recv-ch msg-wrapper))
                  (catch Throwable t
-                   (println "throwable " t)
+                   (>! log-ch {:error t})
                    (async/put! error-ch t)))
                (recur)))
 
             send-ch
             ([msg]
              (when msg
-               (println "send!" msg)
+               #_(>! log-ch {:send! msg})
                (write session error-ch msg)
                (recur)))
 
             connect-ch
             ([[status-code reason]]
-             (println "connect msg" status-code reason)
+             (>! log-ch {:connect! [status-code reason]})
              (async/close! connect-ch))))))))
 
 (defn listener
@@ -89,8 +89,6 @@
     (onWebSocketBinary [this bytes offset len]
       (async/put! read-ch (ByteBuffer/wrap bytes offset len)))
     (onWebSocketError [this cause]
-      (when-not error-ch
-        (println "not error ch!!!"))
       (when cause
         (async/put! error-ch cause)))
     (onWebSocketClose [this status-code reason]
