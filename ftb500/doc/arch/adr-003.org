@@ -1,0 +1,47 @@
+#+TITLE: ADR 3: Session instead of cookie
+
+* Context
+
+We will need to store some information about the user either in
+cookie or session storage. For example, for an anonymous user, we
+will need to assign them a user ID and store it somewhere so that
+ideally, the next day when they open their browser, we know who they
+are.
+
+The two approaches to this are cookie and sessions. Cookies are files
+stored in the user's browser cache. They persist until the cache is
+cleared by the user. Cookies are optional. They are send with every
+request so you don't want to store too much information. They are
+also stored as plain text on the user's machine so you don't want to
+put any sensitive information there.
+
+Session based storage involves the user's state being stored server
+side. The server hands the browser a unique ID which is stored either
+in the url, or in a cookie value called a session cookie. When the
+request hits the server, the server loads the session information
+(usually stored in memory). Sessions have the advantage of minimizing
+the amount of information passed in each request, and there is no
+insecure data stored in the browser cache.
+
+In a multi server environment, the session information needs to be
+stored in a cache that is accessible from all servers. This can
+increase complexity and latency. Datomic helps us here. If we store
+the session information in datomic, the latest session information
+will always be available on all servers.
+
+* Decision
+
+We will use session storage with a session cookie. Session
+information will be stored in datomic.
+
+* Status
+
+Accepted
+
+* Consequences
+
+Because a session will be created every time a user visits the site,
+the amount of storage could grow under an attack. Therefore we will
+have to excise datom's easily. It may be worth creating a separate
+datomic database for session data too since we probably won't need to
+run queries across both data sets.

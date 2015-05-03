@@ -1,0 +1,37 @@
+#+TITLE: ADR 2: Database storage engine
+
+* Context
+
+When creating a multiplayer game engine, there are multiple ways to
+store the game state but they basically boil down to in memory or
+stored in a server. In memory means that all players in the game MUST
+connect to one server, and if the server crashes, and the game is not
+being stored to disk, then the game is lost. It also means you can't
+ask global questions such as "how many games are in progress", plus if
+you want to browse games to join, you need to implement some kind of
+server to server communication. However it is of course as fast as it
+gets.
+
+If the game state is stored in the database, then the game is
+resilient to server failure and is searcheable. Plus players don't
+all need to connect to the same server. The downside is that each
+server request will result in a databast request which will of course
+relult in a slow experience.
+
+Datomic changes that however. It pushes every new datom to every
+server so that every server has the latest copy of every game. This
+means that all game players don't need to connect to the same server.
+
+* Decision
+
+We will store all game state in datomic. Players can connect to any
+server.
+
+* Status
+
+Accepted
+
+* Consequences
+
+All games will be forwarded to all servers. This could result in
+interesting behaviour over time.

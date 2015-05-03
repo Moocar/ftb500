@@ -1,0 +1,37 @@
+#+TITLE: ADR 1: Allowing anonynmous users
+
+* Context
+
+In order to lower tho barrier to adoption, it is useful to let players
+play the game without having to log in. This introduces challenges
+however. Since the game is stored in the database, we need to record
+the player as an entity, which implies that we need a external player
+ID so that other players can request information about them (e.g
+name, location).
+
+Allowing anonymous players means that anyone can easily script the
+creation of games and players. Since we've decided to store the game
+state in a database rather than in a server's memory, this means that
+the database could easily grow as the result of attacks. In
+comparison, if we force the user to login before creating games, we
+can more easily control this. We will need to ensure that data can be
+purged easily from the database.
+
+* Decision
+
+We will allow anonymous players to both create and join games. When a
+player connects, if they don't already have a user ID against their
+session, one is created and stored in the database session. The user
+is also added to the database, though not until they create or join
+the game.
+
+* Status
+
+Accepted
+
+* Consequences
+
+Anyone (including malicious users) will be able to create as many
+games as they like. This will mean that data volume could be an issue
+under an attack, so we will need to excise data from the database.
+And session data from the database.
