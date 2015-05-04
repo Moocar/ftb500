@@ -81,7 +81,7 @@
    :send-ch - Channel that can be used to send messages back to the
   client"
   [config recv-ch]
-  (let [{:keys [port]} config]
+  (let [{:keys [port]} (get-in config [:server :websocket])]
     (assert (or (= :random port) (number? port)))
     (component/using
       (map->WebsocketServer {:port port :recv-ch recv-ch})

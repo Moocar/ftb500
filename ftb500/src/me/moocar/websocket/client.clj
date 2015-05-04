@@ -52,7 +52,7 @@
   :send-ch - Channel that can be used to send messages back to the
   client"
   [config]
-  (let [{:keys [port hostname]} config]
+  (let [{:keys [port hostname]} (get-in config [:server :websocket])]
     (assert port)
     (assert hostname)
     (component/using

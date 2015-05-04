@@ -1,0 +1,23 @@
+[{:db/id #db/id [:db.part/db]
+  :db/ident :session
+  :db.install/_partition :db.part/db}
+
+ {:db/id #db/id [:db.part/db]
+  :db/ident :session.user/id
+  :db/valueType :db.type/uuid
+  :db/cardinality :db.cardinality/one
+  :db/unique :db.unique/value
+  :db/doc "The user's external ID"
+  :db.install/_attribute :db.part/db}
+
+ {:db/id #db/id [:db.part/db]
+  :db/ident :ftb500
+  :db.install/_partition :db.part/db}
+
+ {:db/id #db/id [:db.part/db]
+  :db/ident :user/id
+  :db/valueType :db.type/uuid
+  :db/cardinality :db.cardinality/one
+  :db/unique :db.unique/value
+  :db/doc "The user's external ID"
+  :db.install/_attribute :db.part/db}]

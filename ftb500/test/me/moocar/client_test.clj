@@ -1,5 +1,6 @@
 (ns me.moocar.client-test
   (:require [clojure.core.async :as async :refer [go >!! <!! <! >! go-loop]]
+            [clojure.edn :as edn]
             [clojure.test :refer [deftest is run-tests]]
             [com.stuartsierra.component :as component]
             [me.moocar.ftb500.client :as client]
@@ -36,8 +37,7 @@
         (component/stop server)))))
 
 (deftest t-joined
-  (let [config {:port 8080
-                :hostname "localhost"}
+  (let [config (edn/read-string (slurp "config.edn"))
         server (component/start (full-system/new-server-system config))]
     (try
       (let [client-systems (repeatedly 2 #(component/start (full-system/new-client-system config)))

@@ -1,0 +1,29 @@
+* DONE create minimal datomic schema
+remember to add a partition
+
+* INPROGRESS create datomic component
+
+* TODO add configuration so that schema can be reset/installed
+
+* TODO pass user/id through to server engine
+When a user/id is present in the session, it should be accessible to
+all downstream functionality
+
+* TODO Create session when websocket created
+This can possibly occur lazily so that we only create the user's
+session when the first value is written
+
+* TODO Create datomic session schema
+for now, it should have a user/id
+
+* TODO When a user types in an anonymous name, create a new user record
+Transact a new customer record
+Store their external user/id in the session
+
+* TODO When an action occurs for a user, be able to send them a msg via channel
+You could have a user logged in on two browsers, which are connected
+to two different servers. Both of them should receive the changes.
+For example, if a player exchanges the kitty, the new cards should be
+sent to both browsers the user is loggid into. It would be great if
+in the datomic tx listener code, you could instantly load the user's
+send-ch and send the changes via that mechanism
