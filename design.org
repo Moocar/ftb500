@@ -29,7 +29,7 @@ should be a transformation layer between the two.
 
 I've decided that all communication should be modelled using
 send/recv channels. If a player plays a card for instance, a message
-will be send over the send channel. Then, the player needs to wait
+will be sent over the send channel. Then, the player needs to wait
 for ackowledgement that their action occurred by listening for it
 over the recv channel. This is similar to a Command Query
 Responsibility Separation (CQRS) strategy, but in a purely

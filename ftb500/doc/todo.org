@@ -1,9 +1,9 @@
 * DONE create minimal datomic schema
 remember to add a partition
 
-* INPROGRESS create datomic component
+* DONE create datomic component
 
-* TODO add configuration so that schema can be reset/installed
+* DONE add configuration so that schema can be reset/installed
 
 * TODO pass user/id through to server engine
 When a user/id is present in the session, it should be accessible to

@@ -4,7 +4,7 @@
             [clojure.test :refer [deftest is run-tests]]
             [com.stuartsierra.component :as component]
             [me.moocar.ftb500.client :as client]
-            [me.moocar.lang :refer [uuid]]
+            [me.moocar.lang :refer [uuid deep-merge]]
             [me.moocar.ftb500.server :as server]
             [me.moocar.websocket.full-system :as full-system]))
 
@@ -36,8 +36,23 @@
       (finally
         (component/stop server)))))
 
+(defn test-config
+  []
+  {:server {:datomic {;; Generate a new db-name each time due to the
+                      ;; tranactor needing 1-minute to delete
+                      ;; database:
+                      ;; https://groups.google.com/forum/#!msg/datomic/1WBgM84nKmc/UzhyugWk6loJ
+                      :db-name (str (uuid))
+                      :reset-db? true
+                      :create-database? true
+                      :create-schema? true}}})
+
+(defn load-test-config []
+  (deep-merge (edn/read-string (slurp "config.edn"))
+              (test-config)))
+
 (deftest t-joined
-  (let [config (edn/read-string (slurp "config.edn"))
+  (let [config (load-test-config)
         server (component/start (full-system/new-server-system config))]
     (try
       (let [client-systems (repeatedly 2 #(component/start (full-system/new-client-system config)))

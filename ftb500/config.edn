@@ -1,3 +1,7 @@
-{:server {:datomic {:transactor {:uri "datomic:free://localhost:4334/ftb500"}}
+{:server {:datomic {:db-name "ftb500"
+                    :sub-uri "datomic:free://localhost:4334"
+                    :reset-db? false
+                    :create-database? false
+                    :create-schema? false}
           :websocket {:hostname "localhost"
                       :port 8080}}}
