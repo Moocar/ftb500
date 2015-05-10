@@ -11,7 +11,14 @@
 
                  [com.cognitect/transit-clj "0.8.259"]
 
-                 [org.eclipse.jetty.websocket/websocket-api "9.3.0.M1"]
-                 [org.eclipse.jetty.websocket/websocket-client "9.3.0.M1"]
-                 [org.eclipse.jetty.websocket/websocket-server "9.3.0.M1"]]
-  :profiles {:dev {:dependencies [[org.clojure/tools.namespace "0.2.10"]]}})
+                 ;; Logging
+                 [ch.qos.logback/logback-classic "1.0.13"]
+                 [org.slf4j/log4j-over-slf4j "1.7.12"]
+                 [org.slf4j/jcl-over-slf4j "1.7.12"]
+                 [org.slf4j/jul-to-slf4j "1.7.12"]
+
+                 [org.eclipse.jetty.websocket/websocket-api "9.3.0.M2"]
+                 [org.eclipse.jetty.websocket/websocket-client "9.3.0.M2"]
+                 [org.eclipse.jetty.websocket/websocket-server "9.3.0.M2"]]
+  :profiles {:dev {:source-paths #{"dev"}
+                   :dependencies [[org.clojure/tools.namespace "0.2.10"]]}})

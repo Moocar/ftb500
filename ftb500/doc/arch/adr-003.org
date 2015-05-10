@@ -10,7 +10,7 @@ are.
 
 The two approaches to this are cookie and sessions. Cookies are files
 stored in the user's browser cache. They persist until the cache is
-cleared by the user. Cookies are optional. They are send with every
+cleared by the user. Cookies are optional. They are sent with every
 request so you don't want to store too much information. They are
 also stored as plain text on the user's machine so you don't want to
 put any sensitive information there.
