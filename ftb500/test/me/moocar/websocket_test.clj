@@ -6,16 +6,19 @@
             [me.moocar.websocket.client :as client]))
 
 (deftest t-all
-  (let [server-config {:port :random}
+  (let [server-config {:server {:websocket {:port :random}}}
         server-recv-ch (async/chan 1)
-        server (component/start (server/new-websocket-server server-config server-recv-ch))]
+        log-ch (async/chan 1000)
+        server (component/start (assoc (server/new-websocket-server server-config server-recv-ch)
+                                       :log-ch log-ch))]
     (try
       (let [server-port (:local-port server)
-            client-config {:hostname "localhost" :port server-port}
+            client-config {:server {:websocket {:hostname "localhost" :port server-port}}}
             client-transport-chans {:send-ch (async/chan 1)
                                     :recv-ch (async/chan 1)}
             client (component/start (assoc (client/new-websocket-client client-config)
-                                           :transport-chans client-transport-chans))]
+                                           :transport-chans client-transport-chans
+                                           :log-ch log-ch))]
         (try
           (let [msg {:route :moo/car
                      :body "this is my body"}]

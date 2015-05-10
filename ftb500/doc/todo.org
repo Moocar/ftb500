@@ -13,7 +13,7 @@ all downstream functionality
 This can possibly occur lazily so that we only create the user's
 session when the first value is written
 
-* TODO Create datomic session schema
+* DONE Create datomic session schema
 for now, it should have a user/id
 
 * TODO When a user types in an anonymous name, create a new user record
