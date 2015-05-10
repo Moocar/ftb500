@@ -5,7 +5,8 @@
             [me.moocar.inline :as inline]
             [me.moocar.websocket :as websocket]
             [me.moocar.websocket.client :as client]
-            [me.moocar.websocket.server :as server]))
+            [me.moocar.websocket.server :as server]
+            [clojure.tools.namespace.repl :refer [refresh refresh-all]]))
 
 (defn new-server []
   (let [ws-config {:port 8080 :hostname "localhost"}

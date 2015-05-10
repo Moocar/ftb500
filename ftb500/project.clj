@@ -13,4 +13,5 @@
 
                  [org.eclipse.jetty.websocket/websocket-api "9.3.0.M1"]
                  [org.eclipse.jetty.websocket/websocket-client "9.3.0.M1"]
-                 [org.eclipse.jetty.websocket/websocket-server "9.3.0.M1"]])
+                 [org.eclipse.jetty.websocket/websocket-server "9.3.0.M1"]]
+  :profiles {:dev {:dependencies [[org.clojure/tools.namespace "0.2.10"]]}})
