@@ -12,7 +12,7 @@
         log-ch (async/chan 100)
         transport-chans {:send-ch (async/chan 1)
                          :recv-ch (async/chan 1)}]
-    (assoc (websocket-client/new-websocket-client config)
+    (assoc (websocket-client/construct config)
            :transport-chans transport-chans
            :log-ch log-ch)))
 

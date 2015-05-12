@@ -1,54 +1,39 @@
 (ns me.moocar.websocket-test
   (:require [clojure.core.async :as async :refer [go >!! <!! <! >! go-loop]]
             [clojure.test :refer [deftest is run-tests]]
-            [com.stuartsierra.component :as component]
-            [me.moocar.websocket.server :as server]
-            [me.moocar.websocket.client :as client])
-  (:import (org.eclipse.jetty.util HttpCookieStore)))
+            [clojure.tools.namespace.repl :refer [refresh refresh-all]]
+            [me.moocar.component :refer [with-test-system]]
+            [me.moocar.websocket.system :as system]))
 
-(deftest t-all
-  (let [server-config {:server {:websocket {:port :random}}}
-        server-recv-ch (async/chan 1)
-        log-ch (async/chan 1000)
-        cookie-store (HttpCookieStore.)
-        server (component/start (assoc (server/new-websocket-server server-config server-recv-ch)
-                                       :log-ch log-ch))
-        server-port (:local-port server)
-        client-config {:server {:websocket {:hostname "localhost" :port server-port}}}]
-    (is (empty? (.getCookies cookie-store)))
-    (try
-      (let [client-transport-chans {:send-ch (async/chan 1)
-                                    :recv-ch (async/chan 1)}
-            client (component/start (assoc (client/new-websocket-client client-config)
-                                           :transport-chans client-transport-chans
-                                           :log-ch log-ch
-                                           :cookie-store cookie-store))]
-        (try
-          (let [msg {:route :moo/car
-                     :body "this is my body"}]
-            (>!! (:send-ch client-transport-chans) msg)
-            (go
-              (when-let [packet (<! server-recv-ch)]
-                (is (:session-id packet))
-                (>! (:send-ch packet) (:msg packet))))
-            (is (= msg (:msg (<!! (:recv-ch client-transport-chans)))))
-            (is (= 1 (count (.getCookies cookie-store)))))
-          (finally
-            (component/stop client))))
-      (let [client-transport-chans {:send-ch (async/chan 1)
-                                    :recv-ch (async/chan 1)}
-            client (component/start (assoc (client/new-websocket-client client-config)
-                                           :transport-chans client-transport-chans
-                                           :log-ch log-ch
-                                           :cookie-store cookie-store))]
-        (try
-          (is (= 1 (count (.getCookies cookie-store))))
-          (finally
-            (component/stop client))))
-      (finally
-        (component/stop server)))
-    (async/close! log-ch)
-    (go-loop []
-      (when-let [msg (<! log-ch)]
-        (clojure.pprint/pprint msg)
-        (recur)))))
+(defn local-config []
+  {:server {:websocket {:hostname "localhost"
+                        :port :random}}})
+
+(defn update-config [config server-system]
+  (assoc-in config [:server :websocket :port]
+            (:local-port (:me.moocar.websocket/server server-system))))
+
+(defmacro with-full-system [[binding-form config] & body]
+  `(with-test-system [server-system# (system/new-server ~config)]
+     (let [config# (update-config ~config server-system#)]
+       (with-test-system [client-system# (system/new-client config#)]
+         (let [~binding-form {:server-system server-system#
+                              :client-system client-system#}]
+           ~@body)))))
+
+(deftest t-should-add-session-id
+  (with-full-system [{:keys [server-system client-system]} (local-config)]
+    (let [cookies (.getCookies (:cookie-store client-system))]
+      (is (= 1 (count (filter #(= (.getName %) "JSESSIONID") cookies)))))))
+
+(deftest t-echo-server
+  (with-full-system [{:keys [server-system client-system]} (local-config)]
+    (let [{:keys [client transport-chans]} client-system
+          {:keys [server-recv-ch]} server-system
+          msg {:route :moo/car :body "this is my body"}]
+      (>!! (:send-ch transport-chans) msg)
+      (go
+        (when-let [packet (<! server-recv-ch)]
+          (is (:session-id packet))
+          (>! (:send-ch packet) (:msg packet))))
+      (is (= msg (:msg (<!! (:recv-ch transport-chans))))))))

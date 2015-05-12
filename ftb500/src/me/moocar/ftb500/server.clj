@@ -2,8 +2,10 @@
   (:require [clojure.core.async :as async :refer [go-loop >! <!]]
             [com.stuartsierra.component :as component]))
 
-(defrecord PubServer [recv-ch ; dependency
-                      route-pub-ch pub-tap mult; after started
+(defrecord PubServer [;; Dependency
+                      recv-ch log-ch
+                      ;; After started
+                      route-pub-ch pub-tap mult
                       ]
   component/Lifecycle
   (start [this]
@@ -35,7 +37,8 @@
         (recur)))))
 
 (defn new-server
-  [config recv-ch]
+  [config]
   (component/using
-    (map->PubServer {:recv-ch recv-ch})
-    [:log-ch]))
+    (map->PubServer {})
+    {:log-ch :log-ch
+     :recv-ch :server-recv-ch}))

@@ -24,4 +24,5 @@
       (assoc this :ch nil))))
 
 (defn new-get-game []
-  (component/using (map->GetGame {}) [:server]))
+  (component/using (map->GetGame {})
+    {:server :me.moocar.ftb500/server}))

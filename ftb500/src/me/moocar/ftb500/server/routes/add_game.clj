@@ -23,4 +23,6 @@
       (assoc this :ch nil))))
 
 (defn new-add-game []
-  (component/using (map->AddGame {}) [:server :log-ch]))
+  (component/using (map->AddGame {})
+    {:server :me.moocar.ftb500/server
+     :log-ch :log-ch}))

@@ -29,4 +29,6 @@
       (assoc this :ch nil))))
 
 (defn new-join-game []
-  (component/using (map->JoinGame {}) [:server :clients]))
+  (component/using (map->JoinGame {})
+    {:server :me.moocar.ftb500/server
+     :clients :clients}))

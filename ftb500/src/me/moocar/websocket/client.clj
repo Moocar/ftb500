@@ -64,7 +64,7 @@
         (assoc this :jetty-client nil :conn nil))
       this)))
 
-(defn new-websocket-client
+(defn construct
   "Creates a new websocket client. config is a map of :port (number)
   and hostname (string) that represent the remote server to connect
   to. recv-ch is a channel upon which incoming messages from the

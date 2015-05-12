@@ -5,12 +5,13 @@
             [me.moocar.ftb500.server.datomic-conn :as datomic-conn]
             [me.moocar.ftb500.server.routes.system :as route-system]))
 
-(defn new-system
-  [config recv-ch]
+(defn construct [config]
   (let [tag :SERVER1]
     (merge
      (route-system/new-system)
-     {:log-ch (async/chan 1 (map #(assoc % :system tag)))
-      :server (server/new-server config recv-ch)
+     {:log-ch (async/chan (async/dropping-buffer 1000)
+                          (map #(assoc % :system tag)))
+      :me.moocar.ftb500/server (server/new-server config)
+      :server-recv-ch (async/chan 1 (map #(assoc % :system tag)))
       :datomic-conn (datomic-conn/construct config)
       :clients (clients/new-clients)})))

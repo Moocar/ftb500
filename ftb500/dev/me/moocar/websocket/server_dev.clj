@@ -15,8 +15,9 @@
       (when-let [msg (<! recv-ch)]
         (>! log-ch msg)
         (recur)))
-    (assoc (websocket-server/new-websocket-server config recv-ch)
-           :log-ch log-ch)))
+    (assoc (websocket-server/construct config)
+           :log-ch log-ch
+           :recv-ch recv-ch)))
 
 (defn go []
   (alter-var-root #'server (constantly (new-server)))

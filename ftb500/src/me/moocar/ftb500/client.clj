@@ -8,8 +8,7 @@
   (select-keys (:msg msg) [:route :keys]))
 
 (defrecord PubClient [;; dependencies
-                      server-chans
-
+                      server-chans log-ch
                       ;; after start
                       pub-ch pub-tap mult]
   component/Lifecycle
@@ -40,10 +39,11 @@
         (>! (:log-ch client) {:cli-recv msg})
         (recur)))))
 
-(defn new-pub-client [config server-chans]
+(defn new-pub-client [config]
   (component/using
-    (map->PubClient {:server-chans server-chans})
-    [:log-ch]))
+    (map->PubClient {})
+    {:server-chans :transport-chans
+     :log-ch :log-ch}))
 
 (defn add-game-request [game-id]
   {:route :game/add

@@ -6,6 +6,7 @@
             [me.moocar.ftb500.client :as client]
             [me.moocar.lang :refer [uuid deep-merge]]
             [me.moocar.ftb500.server :as server]
+            [me.moocar.component :refer [with-test-system]]
             [me.moocar.websocket.full-system :as full-system]))
 
 (defn log-loop
@@ -16,42 +17,37 @@
         (prn (:system v) (dissoc v :system))
         (recur)))))
 
-(deftest t-all
-  (let [config {:port 8080
-                :hostname "localhost"}
-        server (component/start (full-system/new-server-system config))
-        log-ch (async/chan 1 (map #(assoc % :system :TEST001)))]
-    (try
-      (let [client-system (component/start (full-system/new-client-system config))]
-        (try
-          (log-loop [client-system server {:log-ch log-ch}])
-          (server/log-tap (:server server))
-          (let [{:keys [client]} client-system
-                game-id (uuid)
-                response-ch (async/chan 1)]
-            (client/add-game client game-id response-ch)
-            (>!! log-ch {:response (<!! response-ch)}))
-          (finally
-            (component/stop client-system))))
-      (finally
-        (component/stop server)))))
-
-(defn test-config
+(defn local-config
   []
   {:server {:datomic {;; Generate a new db-name each time due to the
                       ;; tranactor needing 1-minute to delete
                       ;; database:
                       ;; https://groups.google.com/forum/#!msg/datomic/1WBgM84nKmc/UzhyugWk6loJ
                       :db-name (str (uuid))
+                      :sub-uri "datomic:free://localhost:4334"
                       :reset-db? true
                       :create-database? true
-                      :create-schema? true}}})
+                      :create-schema? true}
+            :websocket {:hostname "localhost"
+                        :port :random}}})
 
-(defn load-test-config []
-  (deep-merge (edn/read-string (slurp "config.edn"))
-              (test-config)))
+(defn update-config [config server-system]
+  (assoc-in config [:server :websocket :port]
+            (:local-port (:me.moocar.websocket/server server-system))))
 
-(deftest t-joined
+(deftest t-all
+  (let [config (local-config)]
+    (with-test-system [server-system (full-system/new-server-system config)]
+      (let [config (update-config config server-system)]
+        (with-test-system [client-system (full-system/new-client-system config)]
+          (let [{client :me.moocar.ftb500/client
+                 log-ch :log-ch} client-system
+                game-id (uuid)
+                response-ch (async/chan 1)]
+            (client/add-game client game-id response-ch)
+            (>!! log-ch {:response (<!! response-ch)})))))))
+
+#_(deftest t-joined
   (let [config (load-test-config)
         server (component/start (full-system/new-server-system config))]
     (try

@@ -65,8 +65,11 @@
     (createWebSocket [this request response]
       (create-websocket-f this request response))))
 
-(defrecord WebsocketServer [port recv-ch
-                            log-ch
+(defrecord WebsocketServer [;; Configuration
+                            port
+                            ;; Depenencies
+                            recv-ch log-ch
+                            ;; After started
                             server connector local-port]
   component/Lifecycle
   (start [this]
@@ -101,7 +104,7 @@
         (assoc this :server nil :connector nil :local-port nil))
       this)))
 
-(defn new-websocket-server
+(defn construct
   "Creates a new Websocket Server. config is a map that must include:
   :port - number, or :random for a random available port. After the
   component has been started, the bound port will be in :local-port
@@ -110,9 +113,10 @@
    :msg - the raw clojure message sent from the client
    :send-ch - Channel that can be used to send messages back to the
   client"
-  [config recv-ch]
+  [config]
   (let [{:keys [port]} (get-in config [:server :websocket])]
     (assert (or (= :random port) (number? port)))
     (component/using
-      (map->WebsocketServer {:port port :recv-ch recv-ch})
-      [:log-ch])))
+      (map->WebsocketServer {:port port})
+      {:log-ch :log-ch
+       :recv-ch :server-recv-ch})))
