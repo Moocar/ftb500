@@ -4,17 +4,20 @@
             [me.moocar.ftb500.client :as client]
             [me.moocar.ftb500.server.system :as server-system]
             [me.moocar.websocket.server :as websocket-server]
-            [me.moocar.websocket.client :as websocket-client]))
+            [me.moocar.websocket.client :as websocket-client])
+  (:import (org.eclipse.jetty.util HttpCookieStore)))
 
 (defn new-client-system
   [config]
   (let [transport-chans {:send-ch (async/chan 1)
                          :recv-ch (async/chan 1)}
-        tag (keyword (str "CLI" (+ 1000 (rand-int 1000))))]
+        tag (keyword (str "CLI" (+ 1000 (rand-int 1000))))
+        cookie-store (HttpCookieStore.)]
     (component/system-map
      :transport-chans transport-chans
      :client (client/new-pub-client config transport-chans)
      :websocket-client (websocket-client/new-websocket-client config)
+     :cookie-store cookie-store
      :log-ch (async/chan 1 (map #(assoc % :system tag))))))
 
 (defn new-server-system

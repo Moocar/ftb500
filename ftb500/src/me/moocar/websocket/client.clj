@@ -5,8 +5,7 @@
   (:import (java.net URI HttpCookie)
            (org.eclipse.jetty.websocket.api UpgradeResponse)
            (org.eclipse.jetty.websocket.client WebSocketClient ClientUpgradeRequest)
-           (org.eclipse.jetty.websocket.client.io UpgradeListener)
-           (org.eclipse.jetty.util HttpCookieStore)))
+           (org.eclipse.jetty.websocket.client.io UpgradeListener)))
 
 (defn- make-uri
   "Creates the full uri using hostname, port and websocket scheme and
@@ -28,12 +27,12 @@
           (doseq [c (HttpCookie/parse cookie)]
             (.add cookie-store uri c)))))))
 
-(defrecord WebsocketClient [port hostname ; params
-                            transport-chans ; dependencies
-                            log-ch
-                            cookie-store
-                            jetty-client ; after started
-                            ]
+(defrecord WebsocketClient [;; configuration
+                            port hostname
+                            ;; dependencies
+                            transport-chans log-ch cookie-store
+                            ;; after started
+                            jetty-client]
   component/Lifecycle
   (start [this]
     (async/put! log-ch {:websocket-client :started})
