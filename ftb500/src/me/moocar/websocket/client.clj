@@ -31,6 +31,7 @@
 (defrecord WebsocketClient [port hostname ; params
                             transport-chans ; dependencies
                             log-ch
+                            cookie-store
                             jetty-client ; after started
                             ]
   component/Lifecycle
@@ -40,7 +41,6 @@
       this
       (let [jetty-client (WebSocketClient.)
             uri (make-uri this)
-            cookie-store (HttpCookieStore.)
             conn (assoc (websocket/default-conn-f)
                         :log-ch log-ch
                         :client true)
@@ -81,4 +81,4 @@
     (component/using
       (map->WebsocketClient {:hostname hostname
                              :port port})
-      [:transport-chans :log-ch])))
+      [:transport-chans :log-ch :cookie-store])))

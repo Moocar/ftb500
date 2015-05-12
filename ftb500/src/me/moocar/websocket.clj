@@ -44,7 +44,7 @@
   send-ch, converted to a byte buffer, and sent using the session's
   remote. The loop finishes once a disconnect occurs"
   [transport-chans conn]
-  (let [{:keys [error-ch connect-ch read-ch log-ch]} conn
+  (let [{:keys [error-ch connect-ch read-ch log-ch session-id]} conn
         {:keys [send-ch recv-ch]} transport-chans]
     (go
       (when-let [session (<! connect-ch)]
@@ -56,8 +56,9 @@
              #_(>! log-ch {:read buf})
              (when buf
                (try
-                 (let [msg-wrapper {:msg (transit-buf->clj buf)
-                                    :send-ch send-ch}]
+                 (let [msg-wrapper (cond-> {:msg (transit-buf->clj buf)
+                                            :send-ch send-ch}
+                                     session-id (assoc :session-id session-id))]
                    #_(>! log-ch {:msg-wrapper msg-wrapper})
                    (>! recv-ch msg-wrapper))
                  (catch Throwable t

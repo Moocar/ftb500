@@ -1,11 +1,16 @@
 (ns me.moocar.websocket.server
   (:require [clojure.core.async :as async]
             [com.stuartsierra.component :as component]
+            [me.moocar.lang :refer [uuid]]
             [me.moocar.websocket :as websocket])
-  (:import (org.eclipse.jetty.server Server ServerConnector)
+  (:import (java.net HttpCookie)
+           (org.eclipse.jetty.server Server ServerConnector)
            (org.eclipse.jetty.websocket.server WebSocketHandler)
            (org.eclipse.jetty.websocket.servlet WebSocketCreator
                                                 WebSocketServletFactory)))
+
+(def session-id-key
+  "JSESSIONID")
 
 (defn- websocket-handler
   "WebSocketHandler that creates creator. Boilerplate"
@@ -14,14 +19,39 @@
     (configure [^WebSocketServletFactory factory]
       (.setCreator factory creator))))
 
+(defn find-session-cookie
+  [cookies]
+  (first (filter (fn [cookie]
+                   (= session-id-key (.getName cookie)))
+                 cookies)))
+
+(defn session-cookie-string
+  [session-id]
+  (format "%s=%s; Max-Age=%d"
+          session-id-key
+          session-id
+          (* 60 60 24 30) ;; 30 days
+          ))
+
+(defn find-or-set-session-id
+  [response cookies]
+  (let [persistent-cookie (find-session-cookie cookies)]
+    (or persistent-cookie
+        (let [session-id (str (uuid))]
+          (.addHeader response "Set-Cookie" (session-cookie-string session-id))
+          session-id))))
+
 (defn- create-websocket
   "Returns a function that should be called upon a new connection. The
   function creates a new connection map, starts a connection loop and
   returns a listener"
   [this]
   (fn [_ request response]
-    (let [conn (merge (websocket/default-conn-f)
-                      (select-keys this [:log-ch]))
+    (let [request-cookies (.getCookies request)
+          session-id (find-or-set-session-id response request-cookies)
+          conn (merge (websocket/default-conn-f)
+                      (select-keys this [:log-ch])
+                      {:session-id session-id})
           transport-chans {:send-ch (async/chan 1)
                            :recv-ch (:recv-ch this)}
           listener (websocket/listener conn)]
@@ -40,10 +70,10 @@
                             server connector local-port]
   component/Lifecycle
   (start [this]
-    (println "starting websockt")
     (if server
       this
       (do
+        (async/put! log-ch {:starting :websocket-server})
         (async/put! log-ch {:websocket-server :started})
         (let [port (if (= :random port)
                      0
