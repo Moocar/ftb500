@@ -1,6 +1,7 @@
 (ns me.moocar.ftb500.client
   (:require [clojure.core.async :as async :refer [go-loop <! >!]]
             [com.stuartsierra.component :as component]
+            [me.moocar.lang :refer [uuid]]
             [me.moocar.remote :refer [idempotent-get]]))
 
 (defn msg-topic-fn
@@ -52,6 +53,13 @@
 (defn add-game
   [client game-id ch]
   (let [request (add-game-request game-id)]
+    (idempotent-get client request ch)))
+
+(defn add-user
+  [client player-name ch]
+  (let [request {:route :user/add
+                 :keys {:user/name player-name
+                        :user/id (uuid)}}]
     (idempotent-get client request ch)))
 
 (defn get-game

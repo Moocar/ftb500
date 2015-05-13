@@ -47,6 +47,18 @@
             (client/add-game client game-id response-ch)
             (>!! log-ch {:response (<!! response-ch)})))))))
 
+(deftest t-add-user
+  (let [config (local-config)]
+    (with-test-system [server-system (full-system/new-server-system config)]
+      (let [config (update-config config server-system)]
+        (with-test-system [client-system (full-system/new-client-system config)]
+          (let [{client :me.moocar.ftb500/client
+                 log-ch :log-ch} client-system
+                 player-name (str (uuid))
+                response-ch (async/chan 1)]
+            (client/add-user client player-name response-ch)
+            (is (<!! response-ch))))))))
+
 (deftest t-joined
   (let [config (local-config)]
     (with-test-system [server-system (full-system/new-server-system config)]

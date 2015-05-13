@@ -9,7 +9,7 @@ remember to add a partition
 When a user/id is present in the session, it should be accessible to
 all downstream functionality
 
-* TODO Create session when websocket created
+* DONE Create session when websocket created
 This can possibly occur lazily so that we only create the user's
 session when the first value is written
 

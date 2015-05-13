@@ -2,7 +2,7 @@
  ;;; Session partition
 
  {:db/id #db/id [:db.part/db]
-  :db/ident :session
+  :db/ident :db.part/session
   :db.install/_partition :db.part/db}
 
  {:db/id #db/id [:db.part/db]
@@ -13,10 +13,17 @@
   :db/doc "The user's external ID"
   :db.install/_attribute :db.part/db}
 
+ {:db/id #db/id [:db.part/db]
+  :db/ident :session.user/name
+  :db/valueType :db.type/string
+  :db/cardinality :db.cardinality/one
+  :db/doc "The user's name"
+  :db.install/_attribute :db.part/db}
+
  ;;; Game partition
 
  {:db/id #db/id [:db.part/db]
-  :db/ident :ftb500
+  :db/ident :db.part/ftb500
   :db.install/_partition :db.part/db}
 
  {:db/id #db/id [:db.part/db]
