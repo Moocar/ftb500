@@ -9,3 +9,14 @@
             (try (component/stop system#)
                  (catch Throwable t#
                    (.printStackTrace t#)))))))
+
+(defmacro with-test-systems [[binding-form n system-map] & body]
+  `(let [systems# (repeatedly ~n #(component/start ~system-map))
+         ~binding-form systems#]
+     (try ~@body
+          (finally
+            (try
+              (doseq [system# systems#]
+                (component/stop system#))
+                (catch Throwable t#
+                  (.printStackTrace t#)))))))
