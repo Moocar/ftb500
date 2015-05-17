@@ -13,8 +13,7 @@
             (when-let [session (d/entity db [:session/id session-id])]
               (when-let [user (d/entity db [:user/id (:session.user/id session)])]
                 (>! send-ch {:route :user/add
-                             :keys {:user/name (:user/name user)
-                                    :user/id (:user/id user)}})))
+                             :keys (d/pull db '[:user/id :user/name] (:db/id user))})))
             (finally
               (async/close! result-ch))))))))
 
