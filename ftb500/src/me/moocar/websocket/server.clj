@@ -21,9 +21,10 @@
 
 (defn find-session-cookie
   [cookies]
-  (first (filter (fn [cookie]
-                   (= session-id-key (.getName cookie)))
-                 cookies)))
+  (some->> cookies
+           (filter #(= session-id-key (.getName %)))
+           (first)
+           (.getValue)))
 
 (defn session-cookie-string
   [session-id]
@@ -52,7 +53,7 @@
           conn (merge (websocket/default-conn-f)
                       (select-keys this [:log-ch])
                       {:session-id session-id})
-          transport-chans {:send-ch (async/chan 1)
+          transport-chans {:send-ch (async/chan)
                            :recv-ch (:recv-ch this)}
           listener (websocket/listener conn)]
       (websocket/conn-loop transport-chans conn)

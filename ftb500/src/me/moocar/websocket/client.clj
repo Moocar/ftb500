@@ -60,7 +60,12 @@
   (stop [this]
     (if jetty-client
       (do
+        ;; jetty-client.stop removes all cookies from the cookie
+        ;; store, which isn't what we want. Instead, remove the cookie
+        ;; store and add it back afterwards
+        (.setCookieStore jetty-client nil)
         (.stop jetty-client)
+        (.setCookieStore jetty-client cookie-store)
         (assoc this :jetty-client nil :conn nil))
       this)))
 

@@ -14,7 +14,6 @@
       (let [mult (async/mult recv-ch)
             pub-tap (async/chan 1)
             route-pub-ch (async/pub pub-tap (comp :route :msg))]
-        (println "tapping")
         (async/tap mult pub-tap)
         (assoc this
                :route-pub-ch route-pub-ch

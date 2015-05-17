@@ -9,6 +9,12 @@ remember to add a partition
 When a user/id is present in the session, it should be accessible to
 all downstream functionality
 
+* DONE send user info back on connection
+When a user connects to the server, it will send up its session-id.
+If there is user information associated with it, then automatically
+send a message with that information back down the connection so the
+client knows who it is
+
 * DONE Create session when websocket created
 This can possibly occur lazily so that we only create the user's
 session when the first value is written

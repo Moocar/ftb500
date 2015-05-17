@@ -6,6 +6,14 @@
   :db.install/_partition :db.part/db}
 
  {:db/id #db/id [:db.part/db]
+  :db/ident :session/id
+  :db/valueType :db.type/string
+  :db/cardinality :db.cardinality/one
+  :db/unique :db.unique/value
+  :db/doc "The unique session ID"
+  :db.install/_attribute :db.part/db}
+
+ {:db/id #db/id [:db.part/db]
   :db/ident :session.user/id
   :db/valueType :db.type/uuid
   :db/cardinality :db.cardinality/one

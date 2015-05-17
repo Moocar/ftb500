@@ -1,31 +1,27 @@
-(ns me.moocar.ftb500.server.routes.add-user
+(ns me.moocar.ftb500.server.routes.connect
   (:require [clojure.core.async :as async :refer [<! >! go]]
             [com.stuartsierra.component :as component]
             [datomic.api :as d]))
-{:msg
- {:route :user/add,
-  :keys
-  {:user/name "9a6239b4-d80e-4f68-8f5b-000f32fc06ae",
-   :user/id #uuid "6fd7b4ff-1767-4a4b-8824-19e2bad9c710"}}}
-
 (defn process
   [this]
-  (let [{:keys [tx-ch]} (:datomic-conn this)]
+  (let [{:keys [conn]} (:datomic-conn this)]
     (fn [context result-ch]
       (let [{:keys [msg send-ch session-id]} context
-            {user-id :user/id user-name :user/name} (:keys msg)
-            tx [{:db/id #db/id[:db.part/session]
-                 :session/id session-id
-                 :session.user/id user-id
-                 :session.user/name user-name}]
-            response-ch (async/chan)]
+            db (d/db conn)]
         (go
-          (>! tx-ch [tx response-ch])
-          (<! response-ch)
-          (>! send-ch msg)
-          (async/close! result-ch))))))
+          (try
+            (when-let [session (d/entity db [:session/id session-id])]
+              (let [user (d/pull db '[:session.user/id :session.user/name] (:db/id session))]
+                (when (:session.user/id user)
+                  (>! send-ch {:route :user/add
+                               :keys {:user/name (:session.user/name user)
+                                      :user/id (:session.user/id user)}}))))
+            (finally
+              (async/close! result-ch))))))))
 
-(defrecord AddUser [;; Dependencies
+(defrecord Connect [;; Configuration
+                    sub-k
+                    ;; Dependencies
                     server log-ch datomic-conn
                     ;; After started
                     ch]
@@ -33,7 +29,7 @@
   (start [this]
     (let [{:keys [route-pub-ch]} server
           ch (async/chan)]
-      (async/sub route-pub-ch :user/add ch)
+      (async/sub route-pub-ch sub-k ch)
       (async/pipeline-async 5 (async/chan (async/dropping-buffer 1))
                             (process this)
                             ch)
@@ -41,11 +37,11 @@
   (stop [this]
     (let [{:keys [route-pub-ch]} server]
       (async/close! ch)
-      (async/unsub route-pub-ch :game/add ch)
+      (async/unsub route-pub-ch sub-k ch)
       (assoc this :ch nil))))
 
 (defn construct []
-  (component/using (map->AddUser {})
+  (component/using (map->Connect {:sub-k :me.moocar.websocket/connect})
     {:server :me.moocar.ftb500/server
      :log-ch :log-ch
      :datomic-conn :datomic-conn}))

@@ -48,6 +48,10 @@
         {:keys [send-ch recv-ch]} transport-chans]
     (go
       (when-let [session (<! connect-ch)]
+        (when session-id
+          (>! recv-ch {:msg {:route ::connect}
+                       :session-id session-id
+                       :send-ch send-ch}))
         (loop []
           (alt!
 

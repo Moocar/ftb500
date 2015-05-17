@@ -1,0 +1,47 @@
+#+TITLE: ADR 4: Websocket per game
+
+* Context
+
+When a user loads the page, they will download javascript which will
+render the page. It will also initiate a websocket connection to the
+server. But when should it do it? When it starts/joins a game? Or
+when it loads the page in general?
+
+It's important to note that we want to allow players to play multiple
+games in the one browser tab if possible. If we do a socket per game,
+we don't need to duplicate game/id information on every
+request/response, which is handy. If there's only one websocket open,
+then we have to send the game ID in every request/response.
+
+But we'll need websockets open for other things. E.g getting a feed
+of any new games created in your area. Or changes to your profile
+that occur from another browser.
+
+A player can be logged into multiple tabs and have multiple games
+going at once. Therefore, when an update occurs for a game, the
+server needs to figure out which clients are connected to that game,
+and send the update to all those clients. A browser tab can have its
+own tabs inside that are connected to the game too.
+
+Another factor is that many browsers only allow a certain number of
+TCP connections open at any on time.
+
+* Decision
+
+We will have one websocket open for the life of the browser tab.
+Every request/response will therefore require the game/id to be
+present. A tab can be connected to multiple games so it will get
+updates for all of them, but they will all be through the one
+websocket.
+
+* Status
+
+Accepted
+
+* Consequences
+
+Each request will now have to carry more data (the game UUID). Which
+could slow things down. But, if you are listening to 100 games, you
+will only have one TCP connection open. So more total data being
+sent, but less connections. Plus, any other data, e.g profile updates
+will all come through the same connection too
