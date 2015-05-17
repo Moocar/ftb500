@@ -16,8 +16,10 @@
             {user-id :user/id user-name :user/name} (:keys msg)
             tx [{:db/id #db/id[:db.part/session]
                  :session/id session-id
-                 :session.user/id user-id
-                 :session.user/name user-name}]
+                 :session.user/id user-id}
+                {:db/id #db/id[:db.part/ftb500]
+                 :user/id user-id
+                 :user/name user-name}]
             response-ch (async/chan)]
         (go
           (>! tx-ch [tx response-ch])

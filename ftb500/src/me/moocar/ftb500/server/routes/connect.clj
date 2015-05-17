@@ -11,11 +11,10 @@
         (go
           (try
             (when-let [session (d/entity db [:session/id session-id])]
-              (let [user (d/pull db '[:session.user/id :session.user/name] (:db/id session))]
-                (when (:session.user/id user)
-                  (>! send-ch {:route :user/add
-                               :keys {:user/name (:session.user/name user)
-                                      :user/id (:session.user/id user)}}))))
+              (when-let [user (d/entity db [:user/id (:session.user/id session)])]
+                (>! send-ch {:route :user/add
+                             :keys {:user/name (:user/name user)
+                                    :user/id (:user/id user)}})))
             (finally
               (async/close! result-ch))))))))
 
