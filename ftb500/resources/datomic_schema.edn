@@ -27,6 +27,8 @@
   :db/ident :db.part/ftb500
   :db.install/_partition :db.part/db}
 
+ ;;; User
+
  {:db/id #db/id [:db.part/db]
   :db/ident :user/id
   :db/valueType :db.type/uuid
@@ -40,4 +42,57 @@
   :db/valueType :db.type/string
   :db/cardinality :db.cardinality/one
   :db/doc "The user's name"
-  :db.install/_attribute :db.part/db}]
+  :db.install/_attribute :db.part/db}
+
+ ;;; Seat
+
+ {:db/id #db/id[:db.part/db]
+  :db/ident :seat/id
+  :db/valueType :db.type/uuid
+  :db/cardinality :db.cardinality/one
+  :db/doc "The external ID for a seat"
+  :db.install/_attribute :db.part/db}
+
+ {:db/id #db/id[:db.part/db]
+  :db/ident :seat/position
+  :db/valueType :db.type/long
+  :db/cardinality :db.cardinality/one
+  :db/doc "Each seat has a corresponding position. Positions increment
+  to the left, so position 1 will be to the left of position 0"
+  :db.install/_attribute :db.part/db}
+
+ {:db/id #db/id[:db.part/db]
+  :db/ident :seat/user
+  :db/valueType :db.type/ref
+  :db/cardinality :db.cardinality/one
+  :db/doc "A seat can be in use by a user"
+  :db.install/_attribute :db.part/db}
+
+ ;;; Game
+
+ {:db/id #db/id [:db.part/db]
+  :db/ident :game/id
+  :db/valueType :db.type/uuid
+  :db/cardinality :db.cardinality/one
+  :db/unique :db.unique/value
+  :db/doc "The External Game ID"
+  :db.install/_attribute :db.part/db}
+
+ {:db/id #db/id[:db.part/db]
+  :db/ident :game/seats
+  :db/valueType :db.type/ref
+  :db/cardinality :db.cardinality/many
+  :db/isComponent true
+  :db/doc "The seats for this game"
+  :db.install/_attribute :db.part/db}
+
+ {:db/id #db/id[:db.part/db]
+  :db/ident :game/join
+  :db/fn #db/fn {:lang "clojure"
+                 :params [db user-id game-id]
+                 :code "(let [game (datomic.api/entity db game-id)
+                             seats (sort-by :seat/position (:game/seats game))
+                             next-vacant (first (remove #(contains? % :seat/player) seats))]
+                         (if (empty? next-vacant)
+                           (throw (ex-info \"No more seats available\" {:no :seats}))
+                           [[:db/add (:db/id next-vacant) :seat/player player-id]]))"}}]

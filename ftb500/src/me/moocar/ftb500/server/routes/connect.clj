@@ -18,7 +18,7 @@
               (async/close! result-ch))))))))
 
 (defrecord Connect [;; Configuration
-                    sub-k
+                    route
                     ;; Dependencies
                     server log-ch datomic-conn
                     ;; After started
@@ -27,7 +27,7 @@
   (start [this]
     (let [{:keys [route-pub-ch]} server
           ch (async/chan)]
-      (async/sub route-pub-ch sub-k ch)
+      (async/sub route-pub-ch route ch)
       (async/pipeline-async 5 (async/chan (async/dropping-buffer 1))
                             (process this)
                             ch)
@@ -35,11 +35,11 @@
   (stop [this]
     (let [{:keys [route-pub-ch]} server]
       (async/close! ch)
-      (async/unsub route-pub-ch sub-k ch)
+      (async/unsub route-pub-ch route ch)
       (assoc this :ch nil))))
 
 (defn construct []
-  (component/using (map->Connect {:sub-k :me.moocar.websocket/connect})
+  (component/using (map->Connect {:route :me.moocar.websocket/connect})
     {:server :me.moocar.ftb500/server
      :log-ch :log-ch
      :datomic-conn :datomic-conn}))

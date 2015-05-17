@@ -11,6 +11,6 @@
   (component/system-map
    :game/add (add-game/new-add-game)
    :user/connect (connect/construct)
-   :game/get (get-game/new-get-game)
-   :game/join (join-game/new-join-game)
+   :game/get (get-game/construct)
+   :game/join (join-game/construct)
    :user/add (add-user/construct)))

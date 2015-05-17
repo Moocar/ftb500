@@ -27,7 +27,9 @@
           (>! send-ch msg)
           (async/close! result-ch))))))
 
-(defrecord AddUser [;; Dependencies
+(defrecord AddUser [;; Configuration
+                    route
+                    ;; Dependencies
                     server log-ch datomic-conn
                     ;; After started
                     ch]
@@ -35,7 +37,7 @@
   (start [this]
     (let [{:keys [route-pub-ch]} server
           ch (async/chan)]
-      (async/sub route-pub-ch :user/add ch)
+      (async/sub route-pub-ch route ch)
       (async/pipeline-async 5 (async/chan (async/dropping-buffer 1))
                             (process this)
                             ch)
@@ -43,11 +45,11 @@
   (stop [this]
     (let [{:keys [route-pub-ch]} server]
       (async/close! ch)
-      (async/unsub route-pub-ch :game/add ch)
+      (async/unsub route-pub-ch route ch)
       (assoc this :ch nil))))
 
 (defn construct []
-  (component/using (map->AddUser {})
+  (component/using (map->AddUser {:route :user/add})
     {:server :me.moocar.ftb500/server
      :log-ch :log-ch
      :datomic-conn :datomic-conn}))
