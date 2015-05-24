@@ -3,15 +3,12 @@
   :url "http://example.com/FIXME"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
-  :dependencies [[org.clojure/clojure "1.7.0-beta2"]
+  :dependencies [[org.clojure/clojure "1.7.0-RC1"]
                  [org.clojure/core.async "0.1.346.0-17112a-alpha"]
                  [com.cognitect/transit-clj "0.8.259"]
-                 [com.datomic/datomic-free "0.9.5153"]
+                 [com.datomic/datomic-free "0.9.5173" :exclusions [joda-time]]
                  [com.stuartsierra/component "0.2.3"]
                  [com.stuartsierra/dependency "0.1.1"]
-
-                 [me.moocar/lang "0.1.0-SNAPSHOT"]
-
 
                  ;; Logging
                  [ch.qos.logback/logback-classic "1.0.13"]

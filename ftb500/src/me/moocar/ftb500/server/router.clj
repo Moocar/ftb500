@@ -2,8 +2,8 @@
   (:require [clojure.core.async :as async :refer [<! >! go]]
             [com.stuartsierra.component :as component]
             [com.stuartsierra.dependency :as dep]
-            [me.moocar.ftb500.interceptor :as i]
-            [me.moocar.ftb500.impl.interceptor :as ii]
+            [io.pedestal.interceptor :as i]
+            [io.pedestal.impl.interceptor :as ii]
             [me.moocar.ftb500.server.routes.user :as user]
             [me.moocar.ftb500.server.routes.game :as game]
             [datomic.api :as d]))
