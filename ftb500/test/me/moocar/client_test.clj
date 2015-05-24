@@ -32,6 +32,9 @@
             :websocket {:hostname "localhost"
                         :port :random}}})
 
+(defn wait [ch]
+  (first (alts!! [ch (async/timeout 1000)])))
+
 (defn update-config [config server-system]
   (assoc-in config [:server :websocket :port]
             (:local-port (:me.moocar.websocket/server server-system))))
@@ -44,10 +47,26 @@
            player-name (str (uuid))
            user-id-request (client/add-user-request user-id player-name)
            response-ch (async/chan 1)]
-      (idempotent-get client user-id-request response-ch)
-      (is (alts!! [response-ch (async/timeout 1000)])))))
 
-#_(defn t-should-send-user-info-when-connected
+      ;; no user-id or user-name
+      (idempotent-get client {:route :user/add} response-ch)
+      (is (= {:required [:user/id :user/name]}
+             (:error (:request (wait response-ch)))))
+
+      ;; no user/name
+      (idempotent-get client {:route :user/add
+                              :keys {:user/id user-id}}
+                      response-ch)
+      (is (= {:required [:user/id :user/name]}
+             (:error (:request (wait response-ch)))))
+
+      ;; happy path
+      (idempotent-get client user-id-request response-ch)
+      (let [response (:request (wait response-ch))]
+        (is response)
+        (is (not (contains? response :error)))))))
+
+(defn t-should-send-user-info-when-connected
   "Connnect to a server and set your self up as a user. Then
   disconnect, and reconnect. The server should then push your user
   information down to you"

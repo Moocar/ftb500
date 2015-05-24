@@ -32,6 +32,13 @@
              (let [user (d/entity db [:user/id (:session.user/id session)])]
                (assoc context :user user)))}})
 
+(defn invalid-data []
+  {:error (fn [{:keys [send-ch request] :as context} error]
+            (if (= :invalid-data (:reason (ex-data error)))
+              (let [{:keys [required]} (ex-data error)]
+                (go (>! send-ch (assoc request :error {:required required})) nil))
+              (throw error)))})
+
 (def routes-spec
   {:db (db)
    :load-session (load-session)
@@ -77,6 +84,7 @@
   [system context]
   (-> context
       (ii/enqueue (add-system system)
+                  (invalid-data)
                   (add-route system routes-spec))
       ii/execute))
 
