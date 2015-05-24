@@ -1,6 +1,10 @@
 (ns me.moocar.remote
-  (:require [clojure.core.async :as async :refer [<! >! alt! go-loop go]]
-            [me.moocar.lang :refer [uuid]]))
+  (:require [#? (:clj  clojure.core.async
+                 :cljs cljs.core.async)
+             :as async :refer [<! >! #?@ (:clj [go alt!])]]
+            #? (:clj  [me.moocar.lang :refer [uuid]])
+            #? (:cljs [cljs-uuid-utils.core :refer [make-random-squuid]]))
+  #? (:cljs (:require-macros [cljs.core.async.macros :refer [go alt!]])))
 
 (defn retryable?
   [request]
@@ -35,21 +39,24 @@
 
 (defn post
   [client request response-ch]
-  (let [{:keys [server-chans error-ch mult]} client
+  (let [{:keys [server-chans error-ch mult log-ch]} client
         {:keys [send-ch]} server-chans
         request-tap (async/chan 1)
         pub-ch (async/pub request-tap (comp :request/id :request))
-        request-id (str (uuid))
+        request-id (str #? (:clj (uuid)
+                            :cljs (make-random-squuid)))
         request (assoc request :request/id request-id)]
     (async/tap mult request-tap)
     (async/sub pub-ch request-id response-ch)
     (go
       (try
         (loop []
-          (async/put! send-ch request)
+          (>! log-ch (str "attempting " request))
+          (>! send-ch request)
           (alt! response-ch
                 ([response]
                  (when response
+                   (>! log-ch "RESPONSE!")
                    (if-let [error (:error response)]
                      (if (retryable? error)
                        (do (<! (async/timeout (:retry-ms error)))

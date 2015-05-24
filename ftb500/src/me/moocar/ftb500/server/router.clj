@@ -89,6 +89,8 @@
 
 (defn handle
   [system context]
+  (async/put! (:log-ch system)
+              (select-keys context [:request :session-id]))
   (-> context
       (ii/enqueue (handle-error)
                   (add-system system)

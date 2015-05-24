@@ -3,7 +3,8 @@
             [clojure.java.io :as jio]
             [cognitect.transit :as transit]
             me.moocar.byte-buffer)
-  (:import (java.nio ByteBuffer)
+  (:import (java.io ByteArrayOutputStream)
+           (java.nio ByteBuffer)
            (org.eclipse.jetty.websocket.api WebSocketListener Session
                                             WriteCallback RemoteEndpoint)))
 
@@ -31,7 +32,11 @@
   transit :json"
   [session error-ch msg]
   (try
-    (.sendBytes (.getRemote session) (clj->transit-buf msg))
+    (let [output-stream (ByteArrayOutputStream.)
+          writer (transit/writer output-stream :json)
+          _ (transit/write writer msg)
+          string (.toString output-stream)]
+     (.sendString (.getRemote session) string))
     (catch Throwable t
       (println t)
       (async/put! error-ch t))))
@@ -90,7 +95,7 @@
     (onWebSocketConnect [this session]
       (async/put! connect-ch session))
     (onWebSocketText [this message]
-      (throw (UnsupportedOperationException. "Text not supported")))
+      (async/put! read-ch (.getBytes message (java.nio.charset.Charset/forName "UTF-8"))))
     (onWebSocketBinary [this bytes offset len]
       (async/put! read-ch (ByteBuffer/wrap bytes offset len)))
     (onWebSocketError [this cause]

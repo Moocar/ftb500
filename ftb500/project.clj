@@ -6,7 +6,9 @@
   :dependencies [[org.clojure/clojure "1.7.0-RC1"]
                  [org.clojure/core.async "0.1.346.0-17112a-alpha"]
                  [com.cognitect/transit-clj "0.8.259"]
+                 [com.cognitect/transit-cljs "0.8.215"]
                  [com.datomic/datomic-free "0.9.5173" :exclusions [joda-time]]
+                 [com.lucasbradstreet/cljs-uuid-utils "1.0.1"]
                  [com.stuartsierra/component "0.2.3"]
                  [com.stuartsierra/dependency "0.1.1"]
 
