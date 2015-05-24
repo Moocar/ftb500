@@ -7,7 +7,7 @@
             [me.moocar.component :refer [with-test-system with-test-systems]]
             [me.moocar.ftb500.client :as client]
             [me.moocar.lang :refer [uuid deep-merge]]
-            [me.moocar.remote :refer [idempotent-get]]
+            [me.moocar.remote :refer [idempotent-get post]]
             [me.moocar.websocket.full-system :as full-system]))
 
 (defn log-loop
@@ -32,8 +32,13 @@
             :websocket {:hostname "localhost"
                         :port :random}}})
 
+
 (defn wait [ch]
-  (first (alts!! [ch (async/timeout 1000)])))
+  (let [timeout (async/timeout 1000)
+        [v ch] (alts!! [ch timeout])]
+    (or v
+        (if (= ch timeout)
+          (throw (ex-info "Timed out" {}))))))
 
 (defn update-config [config server-system]
   (assoc-in config [:server :websocket :port]
@@ -49,19 +54,19 @@
            response-ch (async/chan 1)]
 
       ;; no user-id or user-name
-      (idempotent-get client {:route :user/add} response-ch)
+      (post client {:route :user/add} response-ch)
       (is (= {:required [:user/id :user/name]}
              (:error (:request (wait response-ch)))))
 
       ;; no user/name
-      (idempotent-get client {:route :user/add
-                              :keys {:user/id user-id}}
-                      response-ch)
+      (post client {:route :user/add
+                    :keys {:user/id user-id}}
+            response-ch)
       (is (= {:required [:user/id :user/name]}
              (:error (:request (wait response-ch)))))
 
       ;; happy path
-      (idempotent-get client user-id-request response-ch)
+      (post client user-id-request response-ch)
       (let [response (:request (wait response-ch))]
         (is response)
         (is (not (contains? response :error)))))))
@@ -79,7 +84,7 @@
         response-ch (async/chan)
         user-id-ch (async/chan)
         user-id-request (client/add-user-request user-id player-name)]
-    (idempotent-get ftb500-client user-id-request response-ch)
+    (post ftb500-client user-id-request response-ch)
     (alts!! [response-ch (async/timeout 1000)])
     (async/sub (:pub-ch ftb500-client)
                user-id-request
