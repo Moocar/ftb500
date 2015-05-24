@@ -49,7 +49,7 @@
     (go
       (when-let [session (<! connect-ch)]
         (when session-id
-          (>! recv-ch {:msg {:route ::connect}
+          (>! recv-ch {:request {:route ::connect}
                        :session-id session-id
                        :send-ch send-ch}))
         (loop []
@@ -60,7 +60,7 @@
              #_(>! log-ch {:read buf})
              (when buf
                (try
-                 (let [msg-wrapper (cond-> {:msg (transit-buf->clj buf)
+                 (let [msg-wrapper (cond-> {:request (transit-buf->clj buf)
                                             :send-ch send-ch}
                                      session-id (assoc :session-id session-id))]
                    #_(>! log-ch {:msg-wrapper msg-wrapper})

@@ -42,10 +42,9 @@
   {:dependencies [:db :load-user]
    :interceptor
    {:enter
-    (fn [{:keys [db request user] :as context}]
+    (fn [{:keys [db request send-ch user] :as context}]
       (let [tx-ch (get-in context [:components :datomic-conn :tx-ch])
             clients (get-in context [:components :clients])
-            {:keys [msg send-ch session-id]} context
             {game-id :game/id seat-id :seat/id} (:keys request)
             game (d/entity db [:game/id game-id])
             tx (if seat-id

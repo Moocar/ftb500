@@ -5,7 +5,7 @@
 
 (defn msg-topic-fn
   [msg]
-  (select-keys (:msg msg) [:route :keys]))
+  (select-keys (:request msg) [:route :keys]))
 
 (defrecord PubClient [;; dependencies
                       server-chans log-ch
@@ -35,7 +35,7 @@
   (let [ch (async/chan 1)]
     (async/tap (:mult client) ch)
     (go-loop []
-      (when-let [msg (:msg (<! ch))]
+      (when-let [msg (:request (<! ch))]
         (>! (:log-ch client) {:cli-recv msg})
         (recur)))))
 

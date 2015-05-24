@@ -70,8 +70,8 @@
          ordered-deps)))
 
 (defn add-route [system routes-spec]
-  {:enter (fn [{:keys [route] :as context}]
-            (ii/enqueue* context (calc-interceptors route routes-spec)))})
+  {:enter (fn [context]
+            (ii/enqueue* context (calc-interceptors (get-in context [:request :route]) routes-spec)))})
 
 (defn handle
   [system context]

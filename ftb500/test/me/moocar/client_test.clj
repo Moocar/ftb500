@@ -77,7 +77,7 @@
       (<!! response-ch)
       (client/get-game client1 game-id response-ch)
       (let [game-info (<!! response-ch)
-            seats (get-in game-info [:msg :body :seats])]
+            seats (get-in game-info [:request :body :seats])]
         (client/join-game client1 game-id (first seats) response-ch)
         (client/join-game client2 game-id (second seats) response-ch)))))
 
