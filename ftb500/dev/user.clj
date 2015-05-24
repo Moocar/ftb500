@@ -6,7 +6,20 @@
             [me.moocar.websocket :as websocket]
             [me.moocar.websocket.client :as client]
             [me.moocar.websocket.server :as server]
+            [me.moocar.ftb500.server.system :as server-system]
             [clojure.tools.namespace.repl :refer [refresh refresh-all]]))
+
+(defn make-config [] {:server {:datomic {;; Generate a new db-name each time due to the
+                      ;; tranactor needing 1-minute to delete
+                      ;; database:
+                      ;; https://groups.google.com/forum/#!msg/datomic/1WBgM84nKmc/UzhyugWk6loJ
+                      :db-name (str (java.util.UUID/randomUUID))
+                      :sub-uri "datomic:free://localhost:4334"
+                      :reset-db? true
+                      :create-database? true
+                      :create-schema? true}
+            :websocket {:hostname "localhost"
+                        :port :random}}})
 
 (defn new-server []
   (let [ws-config {:port 8080 :hostname "localhost"}

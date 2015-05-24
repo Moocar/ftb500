@@ -34,6 +34,8 @@
       (>!! (:send-ch transport-chans) msg)
       (go
         (when-let [packet (<! server-recv-ch)]
-          (is (:session-id packet))
-          (>! (:send-ch packet) (:msg packet))))
+          (is (= :me.moocar.websocket/connect (:route (:msg packet))))
+          (when-let [packet (<! server-recv-ch)]
+            (is (:session-id packet))
+            (>! (:send-ch packet) (:msg packet)))))
       (is (= msg (:msg (<!! (:recv-ch transport-chans))))))))

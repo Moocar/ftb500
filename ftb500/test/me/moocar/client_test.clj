@@ -6,7 +6,6 @@
             [com.stuartsierra.component :as component]
             [me.moocar.component :refer [with-test-system with-test-systems]]
             [me.moocar.ftb500.client :as client]
-            [me.moocar.ftb500.server :as server]
             [me.moocar.lang :refer [uuid deep-merge]]
             [me.moocar.remote :refer [idempotent-get]]
             [me.moocar.websocket.full-system :as full-system]))
@@ -48,7 +47,7 @@
       (idempotent-get client user-id-request response-ch)
       (is (alts!! [response-ch (async/timeout 1000)])))))
 
-(defn t-should-send-user-info-when-connected
+#_(defn t-should-send-user-info-when-connected
   "Connnect to a server and set your self up as a user. Then
   disconnect, and reconnect. The server should then push your user
   information down to you"
@@ -69,7 +68,7 @@
     (component/start (component/stop websocket-client))
     (is (first (alts!! [user-id-ch (async/timeout 1000)])))))
 
-(defn t-joined [config server-system]
+#_(defn t-joined [config server-system]
   (with-test-systems [client-systems 2 (full-system/new-client-system config)]
     (let [[client1 client2] (map :me.moocar.ftb500/client client-systems)
           game-id (uuid)
@@ -86,5 +85,5 @@
   (let [config (local-config)]
     (with-test-system [server-system (full-system/new-server-system config)]
       (let [config (update-config config server-system)]
-        #_(t-add-user config server-system)
-        (t-should-send-user-info-when-connected config server-system)))))
+        (t-add-user config server-system)
+        #_(t-should-send-user-info-when-connected config server-system)))))
