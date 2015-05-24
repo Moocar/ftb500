@@ -27,10 +27,17 @@
 
 (defn load-user []
   {:dependencies [:db :load-session]
-   :interceptor
-   {:enter (fn [{:keys [db session] :as context}]
-             (let [user (d/entity db [:user/id (:session.user/id session)])]
-               (assoc context :user user)))}})
+   :interceptor {:enter (fn [{:keys [db session] :as context}]
+                          (let [user-id (:session.user/id session)
+                                user (d/entity db [:user/id user-id])]
+                            (assoc context :user user)))}})
+
+(defn handle-error []
+  {:error (fn [{:keys [send-ch request] :as context} error]
+            (let [log-ch (get-in context [:components :log-ch])]
+              (go (>! log-ch {:context context :error error})
+                  (>! send-ch (assoc request :error {:type :server-error}))
+                  nil)))})
 
 (defn invalid-data []
   {:error (fn [{:keys [send-ch request] :as context} error]
@@ -83,7 +90,8 @@
 (defn handle
   [system context]
   (-> context
-      (ii/enqueue (add-system system)
+      (ii/enqueue (handle-error)
+                  (add-system system)
                   (invalid-data)
                   (add-route system routes-spec))
       ii/execute))
