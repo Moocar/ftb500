@@ -42,8 +42,11 @@
 (defn invalid-data []
   {:error (fn [{:keys [send-ch request] :as context} error]
             (if (= :invalid-data (:reason (ex-data error)))
-              (let [{:keys [required]} (ex-data error)]
-                (go (>! send-ch (assoc request :error {:required required})) nil))
+              (let [{:keys [required]} (ex-data error)
+                    log-ch (get-in context [:components :log-ch])]
+                (go (>! log-ch {:request request
+                                :error (ex-data error)})
+                    (>! send-ch (assoc request :error {:required required})) nil))
               (throw error)))})
 
 (def routes-spec

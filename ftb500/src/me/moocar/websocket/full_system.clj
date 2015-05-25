@@ -1,5 +1,5 @@
 (ns me.moocar.websocket.full-system
-  (:require [clojure.core.async :as async]
+  (:require [clojure.core.async :as async :refer [go-loop <!]]
             [com.stuartsierra.component :as component]
             [me.moocar.ftb500.client :as client]
             [me.moocar.ftb500.client.system :as client-system]
@@ -26,3 +26,20 @@
   (merge
    (new-server-system config)
    (new-client-system config)))
+
+(defonce ^:dynamic *system* nil)
+
+(defn start []
+  (alter-var-root #'*system* (fn [system]
+                             (component/start
+                              (new-server-system
+                               (read-string (slurp "config.edn"))))))
+  (go-loop []
+    (when-let [msg (<! (:log-ch *system*))]
+      (println msg)
+      (recur))))
+
+(defn refresh-server
+  []
+  (component/stop *system*)
+  (clojure.tools.namespace.repl/refresh :after 'me.moocar.websocket.full-system/start))

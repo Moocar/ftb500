@@ -48,6 +48,7 @@
 
  {:db/id #db/id[:db.part/db]
   :db/ident :seat/id
+  :db/unique :db.unique/value
   :db/valueType :db.type/uuid
   :db/cardinality :db.cardinality/one
   :db/doc "The external ID for a seat"
