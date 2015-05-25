@@ -23,7 +23,8 @@
                  (when-let [game (d/pull db
                                          [{:game/seats [:seat/id :seat/position]}]
                                          [:game/id game-id])]
-                   (>! send-ch (assoc request :body game))))))}})
+                   (>! send-ch (assoc request :body game))
+                   nil))))}})
 
 
 
@@ -45,7 +46,8 @@
           (go
             (>! tx-ch [tx response-ch])
             (<! response-ch)
-            (>! send-ch request)))))}})
+            (>! send-ch request)
+            nil))))}})
 
 (defn join []
   {:dependencies [:db :load-user]
@@ -64,4 +66,5 @@
         (go
           (>! tx-ch [tx response-ch])
           (<! response-ch)
-          (clients/add-client clients game-id send-ch))))}})
+          (clients/add-client clients game-id send-ch)
+          nil)))}})

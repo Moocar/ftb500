@@ -74,7 +74,7 @@
   (.log js/console "render lobby")
   (let [view (:lobby/current-view @db)]
     [:div
-     [:h2 (str "Welcome " (:user/name (:user @db)))]
+     [:h2 (str "Welcome mah to " (:user/name (:user @db)))]
      (case view
        :game [render-game client]
        [render-default-lobby client])]))
@@ -103,7 +103,7 @@
     [render-lobby client]
     (let [name-field (atom "enter here")]
       [:div
-       [:h2 "What is your name?"]
+       [:h2 "What is your name boo bah baz?"]
        [atom-input name-field]
        [:input {:type "button"
                 :value "Set name"
@@ -146,7 +146,8 @@
                 :log-ch log-ch
                 :db (atom {})}
         client (start-client client)
-        ws {:uri "ws://localhost:8080/ws"
+        url (aget arr 2) "localhost:8081"
+        ws {:uri (str "ws://" url "/ws")
             :transport-chans transport-chans
             :log-ch log-ch}
         ws (websocket/start ws)]
@@ -157,3 +158,5 @@
         (recur)))
     (mount-root client)
     (.log js/console "mounted")))
+
+(start)

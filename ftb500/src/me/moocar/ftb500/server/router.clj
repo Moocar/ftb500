@@ -46,7 +46,8 @@
                     log-ch (get-in context [:components :log-ch])]
                 (go (>! log-ch {:request request
                                 :error (ex-data error)})
-                    (>! send-ch (assoc request :error {:required required})) nil))
+                    (>! send-ch (assoc request :error {:required required}))
+                    nil))
               (throw error)))})
 
 (def routes-spec

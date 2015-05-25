@@ -29,11 +29,14 @@
   :clean-targets ^{:protect false} [[:cljsbuild :builds :app :compiler :output-dir]
                                     [:cljsbuild :builds :app :compiler :output-to]]
   :cljsbuild {:builds {:app {:source-paths ["src"]
+                             :figwheel true
                              :compiler {:output-to     "resources/public/js/app.js"
                                         :output-dir    "resources/public/js/out"
                                         :asset-path   "js/out"
                                         :optimizations :none
                                         :pretty-print  true}}}}
+  :figwheel {:css-dirs ["resources/public/css"]}
   :profiles {:dev {:source-paths #{"dev"}
                    :dependencies [[org.clojure/tools.namespace "0.2.10"]]
-                   :plugins [[lein-cljsbuild "1.0.6"]]}})
+                   :plugins [[lein-cljsbuild "1.0.6"]
+                             [lein-figwheel "0.3.3"]]}})
