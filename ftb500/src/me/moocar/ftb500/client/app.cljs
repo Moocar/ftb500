@@ -6,6 +6,8 @@
             [me.moocar.remote :as remote])
   (:require-macros [cljs.core.async.macros :refer [go go-loop]]))
 
+(defonce db (atom {}))
+
 (defn click-take-seat [{:keys [log-ch db] :as client} seat]
   (fn [_]
     (let [response-ch (async/chan)]
@@ -144,9 +146,9 @@
         log-ch (async/chan)
         client {:server-chans transport-chans
                 :log-ch log-ch
-                :db (atom {})}
+                :db db}
         client (start-client client)
-        url (aget arr 2) "localhost:8081"
+        url "localhost:8081"
         ws {:uri (str "ws://" url "/ws")
             :transport-chans transport-chans
             :log-ch log-ch}

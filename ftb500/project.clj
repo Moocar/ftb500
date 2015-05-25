@@ -32,7 +32,6 @@
                              :figwheel true
                              :compiler {:output-to     "resources/public/js/app.js"
                                         :output-dir    "resources/public/js/out"
-                                        :asset-path   "js/out"
                                         :optimizations :none
                                         :pretty-print  true}}}}
   :figwheel {:css-dirs ["resources/public/css"]}
