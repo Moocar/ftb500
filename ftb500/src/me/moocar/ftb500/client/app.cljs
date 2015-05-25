@@ -99,8 +99,7 @@
         (>! log-ch (<! response-ch))))))
 
 (defn current-page [{:keys [db] :as client}]
-  (.log js/console "render current page")
-  (if-let [user (get-in db [:user])]
+  (if-let [user (get-in @db [:user])]
     [render-lobby client]
     (let [name-field (atom "enter here")]
       [:div
